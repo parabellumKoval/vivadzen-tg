@@ -2,18 +2,18 @@
 const { t } = useTgI18n()
 const config = useRuntimeConfig()
 
-const stats = [
-  { icon: 'leaf', value: '120+', label: 'CBD strains' },
-  { icon: 'mushroom', value: '40+', label: 'Mushroom kits' },
-  { icon: 'sparkles', value: '25+', label: 'Entheogens' }
-]
+const stats = computed(() => [
+  { icon: 'leaf', value: '120+', label: t('about_stat_cbd') },
+  { icon: 'mushroom', value: '40+', label: t('about_stat_mushrooms') },
+  { icon: 'sparkles', value: '25+', label: t('about_stat_entheogens') }
+])
 
-const values = [
-  { icon: 'shield', title: 'Lab-tested', text: 'Каждая партия проходит проверку. COA по запросу.' },
-  { icon: 'truck', title: 'Discreet ship', text: 'Нейтральная упаковка, отслеживание, без следов.' },
-  { icon: 'heart', title: 'Care first', text: 'Поддержка после покупки, дозировки, мягкий старт.' },
-  { icon: 'globe', title: 'Worldwide', text: 'Отправляем туда, куда не страшно. И это много стран.' }
-]
+const values = computed(() => [
+  { icon: 'shield', title: t('about_value_lab_title'), text: t('about_value_lab_text') },
+  { icon: 'truck', title: t('about_value_ship_title'), text: t('about_value_ship_text') },
+  { icon: 'heart', title: t('about_value_care_title'), text: t('about_value_care_text') },
+  { icon: 'globe', title: t('about_value_worldwide_title'), text: t('about_value_worldwide_text') }
+])
 </script>
 
 <template>
@@ -22,12 +22,11 @@ const values = [
       <div class="about-hero">
         <span class="about-hero__pill">
           <TgIcon name="flame" :size="12" :stroke="2.4" />
-          Since day one
+          {{ t('about_hero_pill') }}
         </span>
-        <h1 class="about-hero__title">VIVADZEN<br><span>STREET LAB</span></h1>
+        <h1 class="about-hero__title">{{ t('about_hero_title_1') }}<br><span>{{ t('about_hero_title_2') }}</span></h1>
         <p class="about-hero__sub">
-          Мы делаем доступ к CBD, грибам и энтеогенам простым, безопасным и стильным.
-          Никаких аптечных штампов — только живой подбор и забота о вайбе.
+          {{ t('about_hero_sub') }}
         </p>
       </div>
 

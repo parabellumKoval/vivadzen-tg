@@ -19,7 +19,7 @@ const orderProducts = computed<any[]>(() => {
 
 await loadOrders()
 
-const statusLabel = (status?: string) => status || 'new'
+const statusLabel = (status?: string) => status || t('status_new')
 const dateLabel = (value?: string) => {
   if (!value) return ''
   const date = new Date(value)
@@ -33,7 +33,7 @@ const orderTotal = (order: TgOrder) => {
 </script>
 
 <template>
-  <TgLayout :title="t('order_history')" :show-back="true">
+  <TgLayout :title="t('order_history')" :show-back="true" :show-lang="true">
     <section class="tg-page orders-page">
       <div v-if="loading" class="orders-page__list">
         <div v-for="item in 3" :key="item" class="skeleton orders-page__skeleton" />

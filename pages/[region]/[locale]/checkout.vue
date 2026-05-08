@@ -425,7 +425,7 @@ const submit = async () => {
 </script>
 
 <template>
-  <TgLayout :title="t('checkout')" :show-back="true">
+  <TgLayout :title="t('checkout')" :show-back="true" :show-lang="true">
     <form class="tg-page checkout-page" @submit.prevent="submit">
       <div v-if="!cart.items.length" class="tg-empty">
         <div>
@@ -576,7 +576,7 @@ const submit = async () => {
                   <input v-model="order.delivery.room" class="tg-field">
                 </label>
                 <label v-if="needsZip">
-                  <span>ZIP</span>
+                  <span>{{ t('zip') }}</span>
                   <input v-model="order.delivery.zip" class="tg-field" :class="{ 'tg-field--error': errors.zip }">
                   <small v-if="errors.zip" class="tg-error">{{ errors.zip }}</small>
                 </label>
@@ -643,7 +643,7 @@ const submit = async () => {
               </div>
               <div>
                 <span>{{ t('delivery') }}</span>
-                <strong>{{ settingsReady ? formatMoney(cart.deliveryPrice, cart.items[0]?.currency) : '...' }}</strong>
+                <strong>{{ settingsReady ? formatMoney(cart.deliveryPrice, cart.items[0]?.currency) : t('loading') }}</strong>
               </div>
               <div class="checkout-total__final">
                 <span>{{ t('total') }}</span>
@@ -652,7 +652,7 @@ const submit = async () => {
             </section>
 
             <button type="submit" class="tg-btn tg-btn--accent" :disabled="loading">
-              {{ loading ? '...' : t('place_order') }}
+              {{ loading ? t('loading') : t('place_order') }}
             </button>
           </div>
         </section>

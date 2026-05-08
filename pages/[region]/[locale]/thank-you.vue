@@ -18,7 +18,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <TgLayout :title="t('thank_you')">
+  <TgLayout :title="t('thank_you')" :show-lang="true">
     <section class="thank-page">
       <div class="thank-page__icon"><TgIcon name="check" :size="38" :stroke="3" /></div>
       <h1>{{ t('order_success') }}</h1>

@@ -131,7 +131,7 @@ const saveAddressForm = async () => {
     warehouse: addressForm.warehouse || null,
     price: null,
     priceCurrency: null,
-    title: addressForm.title || [addressForm.settlement, addressForm.warehouse || addressForm.street || addressForm.zip].filter(Boolean).join(', ') || 'Address',
+    title: addressForm.title || [addressForm.settlement, addressForm.warehouse || addressForm.street || addressForm.zip].filter(Boolean).join(', ') || t('fallback_address_title'),
     updatedAt: new Date().toISOString()
   }
 
@@ -183,15 +183,15 @@ onMounted(async () => {
           {{ (userStore.fullName || 'V').slice(0, 1).toUpperCase() }}
         </div>
         <div>
-          <h1>{{ userStore.fullName || 'Telegram' }}</h1>
-          <p>{{ userStore.usernameLabel || 'Mini App' }}</p>
+          <h1>{{ userStore.fullName || t('telegram_user') }}</h1>
+          <p>{{ userStore.usernameLabel || t('mini_app') }}</p>
         </div>
       </div>
 
       <form class="account-section" @submit.prevent="saveProfileForm">
         <div class="account-section__header">
           <h2>{{ t('recipient') }}</h2>
-          <small v-if="profileLoading">...</small>
+          <small v-if="profileLoading">{{ t('loading') }}</small>
         </div>
 
         <div class="account-form">
@@ -214,7 +214,7 @@ onMounted(async () => {
         </div>
 
         <button type="submit" class="tg-btn" :disabled="savingProfile">
-          {{ savingProfile ? '...' : t('save') }}
+          {{ savingProfile ? t('loading') : t('save') }}
         </button>
       </form>
 
@@ -276,7 +276,7 @@ onMounted(async () => {
               <input v-model="addressForm.room" class="tg-field">
             </label>
             <label>
-              <span>ZIP</span>
+              <span>{{ t('zip') }}</span>
               <input v-model="addressForm.zip" class="tg-field">
             </label>
           </template>
@@ -288,7 +288,7 @@ onMounted(async () => {
 
           <div class="account-actions">
             <button type="submit" class="tg-btn" :disabled="savingAddress || !addressForm.deliveryMethod">
-              {{ savingAddress ? '...' : t('save') }}
+              {{ savingAddress ? t('loading') : t('save') }}
             </button>
             <button v-if="editingAddressId" type="button" class="tg-btn tg-btn--ghost" @click="resetAddressForm">
               {{ t('cancel') }}

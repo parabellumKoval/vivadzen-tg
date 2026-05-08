@@ -34,18 +34,26 @@ const sectionIdOf = (category: TgCategory) => {
   return `category-section-${category.slug || category.id || 'item'}`
 }
 
-// Vibe stickers — top 3 thematic tiles linking into the catalog
 const vibeTiles = computed(() => [
-  { key: 'cbd', label: 'CBD', tag: 'Chill', icon: 'leaf', bg: 'lime' },
-  { key: 'mushrooms', label: 'Грибы', tag: 'Magic', icon: 'mushroom', bg: 'magenta' },
-  { key: 'entheogens', label: 'Энтеогены', tag: 'Trip', icon: 'sparkles', bg: 'accent' }
+  { key: 'cbd', label: t('home_vibe_cbd_label'), tag: t('home_vibe_cbd_tag'), icon: 'leaf', bg: 'lime' },
+  { key: 'mushrooms', label: t('home_vibe_mushrooms_label'), tag: t('home_vibe_mushrooms_tag'), icon: 'mushroom', bg: 'magenta' },
+  { key: 'entheogens', label: t('home_vibe_entheogens_label'), tag: t('home_vibe_entheogens_tag'), icon: 'sparkles', bg: 'accent' }
 ])
 
-const perks = [
-  { icon: 'truck', title: 'Discreet ship', text: 'Все заказы упаковываются нейтрально и без следов.' },
-  { icon: 'shield', title: 'Lab-tested', text: 'Только проверенные партии. Сертификаты по запросу.' },
-  { icon: 'flame', title: 'Fresh drops', text: 'Новые позиции каждую неделю. Не пропусти дроп.' }
-]
+const perks = computed(() => [
+  { icon: 'truck', title: t('perk_discreet_ship_title'), text: t('perk_discreet_ship_text') },
+  { icon: 'shield', title: t('perk_lab_tested_title'), text: t('perk_lab_tested_text') },
+  { icon: 'flame', title: t('perk_fresh_drops_title'), text: t('perk_fresh_drops_text') }
+])
+
+const stripItems = computed(() => [
+  t('home_strip_fresh'),
+  t('home_strip_fast'),
+  t('home_strip_safe'),
+  t('home_strip_fresh'),
+  t('home_strip_fast'),
+  t('home_strip_safe')
+])
 
 const loadCategoryProducts = async (slug: string) => {
   const products: TgProduct[] = []
@@ -140,23 +148,23 @@ onMounted(() => {
       <div class="hero-card">
         <span class="hero-card__pill">
           <TgIcon name="lightning" :size="12" :stroke="2.4" />
-          New drop · 24/7
+          {{ t('home_hero_pill') }}
         </span>
-        <h1 class="hero-card__title">Hi-vibe<br>street shop</h1>
-        <p class="hero-card__sub">CBD · Грибы · Энтеогены — всё, что меняет настроение, в одном месте.</p>
+        <h1 class="hero-card__title">{{ t('home_hero_title_1') }}<br>{{ t('home_hero_title_2') }}</h1>
+        <p class="hero-card__sub">{{ t('home_hero_sub') }}</p>
         <div class="hero-card__actions">
           <NuxtLink :to="catalogPath()" class="tg-btn tg-btn--ink">
             <TgIcon name="rocket" :size="16" :stroke="2.2" />
-            Залететь в каталог
+            {{ t('home_catalog_cta') }}
           </NuxtLink>
           <NuxtLink :to="catalogPath()" class="tg-btn tg-btn--lime">
             <TgIcon name="flame" :size="16" :stroke="2.2" />
-            Что в тренде
+            {{ t('home_trending_cta') }}
           </NuxtLink>
         </div>
 
         <div class="hero-card__strip" aria-hidden="true">
-          <span>★ FRESH</span><span>★ FAST</span><span>★ SAFE</span><span>★ FRESH</span><span>★ FAST</span><span>★ SAFE</span>
+          <span v-for="(item, index) in stripItems" :key="`${item}-${index}`">★ {{ item }}</span>
         </div>
       </div>
     </section>
@@ -203,7 +211,7 @@ onMounted(() => {
             <p class="tg-subtitle">{{ t('products_count', { count: section.total || section.products.length }) }}</p>
           </div>
           <NuxtLink :to="categoryPath(section.category.slug)" class="home-section__more" :prefetch="false">
-            All
+            {{ t('home_section_all') }}
             <TgIcon name="arrow-right" :size="14" :stroke="2.4" />
           </NuxtLink>
         </div>
@@ -232,14 +240,16 @@ onMounted(() => {
     </section>
 
     <section class="tg-page home-perks">
-      <h2 class="home-perks__title">Why us</h2>
+      <h2 class="home-perks__title">{{ t('home_perks_title') }}</h2>
       <div class="home-perks__grid">
         <div v-for="perk in perks" :key="perk.title" class="perk-card">
           <span class="perk-card__icon">
             <TgIcon :name="perk.icon" :size="24" :stroke="2.2" />
           </span>
-          <strong>{{ perk.title }}</strong>
-          <p>{{ perk.text }}</p>
+          <span class="perk-card__copy">
+            <strong>{{ perk.title }}</strong>
+            <p>{{ perk.text }}</p>
+          </span>
         </div>
       </div>
     </section>
@@ -505,7 +515,13 @@ onMounted(() => {
   place-items: center;
 }
 
-.perk-card strong {
+.perk-card__copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.perk-card__copy strong {
   display: block;
   font-family: var(--font-display);
   font-size: 14px;
@@ -513,8 +529,8 @@ onMounted(() => {
   text-transform: uppercase;
 }
 
-.perk-card p {
-  margin: 4px 0 0;
+.perk-card__copy p {
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 500;

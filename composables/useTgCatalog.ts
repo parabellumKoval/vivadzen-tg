@@ -104,9 +104,13 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
     return scopedCategoryRoot.value ? [scopedCategoryRoot.value] : categoryTree.value
   })
 
+  const normalizedCategorySlug = computed(() => normalizeCategorySlug(categorySlug.value))
+
   const activeCategory = computed(() => {
-    if (!categorySlug.value) return null
-    return findCategoryInTree(scopedCategoryTree.value, (category) => category.slug === categorySlug.value) || null
+    if (!normalizedCategorySlug.value) return null
+    return findCategoryInTree(scopedCategoryTree.value, (category) => {
+      return normalizeCategorySlug(category.slug) === normalizedCategorySlug.value
+    }) || null
   })
 
   const hasMore = computed(() => {
@@ -145,7 +149,7 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
     }
 
     try {
-      const requestedCategorySlug = categorySlug.value
+      const requestedCategorySlug = normalizedCategorySlug.value
       const selectedBaseRoot = scopedCategoryRoot.value
       const isBaseRootRoute = Boolean(
         requestedCategorySlug
@@ -153,13 +157,19 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
         && requestedCategorySlug.toLowerCase() === baseCategorySlug
       )
 
+      let selectedCategory: TgCategory | null = null
+
       if (requestedCategorySlug && selectedBaseRoot && !isBaseRootRoute) {
-        const selectedCategory = findCategoryInTree([selectedBaseRoot], (category) => category.slug === requestedCategorySlug)
+        selectedCategory = findCategoryInTree([selectedBaseRoot], (category) => {
+          return normalizeCategorySlug(category.slug) === requestedCategorySlug
+        })
         if (!selectedCategory) {
           products.value = []
           meta.value = {}
           return
         }
+      } else if (requestedCategorySlug && !isBaseRootRoute) {
+        selectedCategory = activeCategory.value
       }
 
       const response = await $api('/catalog', {
@@ -170,7 +180,10 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
           page: page.value,
           cache: true,
           ...(requestedCategorySlug && !isBaseRootRoute
-            ? { category_slug: requestedCategorySlug }
+            ? {
+                ...(normalizeCategoryId(selectedCategory?.id) ? { category_id: normalizeCategoryId(selectedCategory?.id) } : {}),
+                category_slug: requestedCategorySlug
+              }
             : {
                 ...(baseCategoryId ? { category_id: baseCategoryId } : {}),
                 ...(baseCategorySlug ? { category_slug: baseCategorySlug } : {})

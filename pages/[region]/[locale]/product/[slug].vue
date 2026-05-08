@@ -68,7 +68,7 @@ const addToCart = () => {
 </script>
 
 <template>
-  <TgLayout :title="t('product')" :show-back="true" transparent>
+  <TgLayout :title="t('product')" :show-back="true" :show-lang="true" transparent>
     <div v-if="pending && !product" class="product-page product-page--pending">
       <div class="skeleton product-page__image" />
       <div class="tg-page">
@@ -91,7 +91,7 @@ const addToCart = () => {
       </div>
 
       <div class="tg-page product-page__content">
-        <span v-if="hasSale(activePriceSource)" class="product-page__badge">SALE</span>
+        <span v-if="hasSale(activePriceSource)" class="product-page__badge">{{ t('sale') }}</span>
         <h1 class="product-page__title">{{ product.name }}</h1>
 
         <div class="product-page__price">

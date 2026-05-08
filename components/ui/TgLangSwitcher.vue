@@ -3,13 +3,10 @@ const open = ref(false)
 const { t } = useTgI18n()
 const { locale, locales, switchLocale } = useTgRouting()
 
-const labels: Record<string, string> = {
-  uk: 'Українська',
-  ru: 'Русский',
-  cs: 'Čeština',
-  en: 'English',
-  de: 'Deutsch',
-  es: 'Español'
+const labelOf = (code: string) => {
+  const key = `language_name_${code}`
+  const label = t(key)
+  return label === key ? code.toUpperCase() : label
 }
 
 const selectLocale = async (code: string) => {
@@ -34,7 +31,7 @@ const selectLocale = async (code: string) => {
         :class="{ active: code === locale }"
         @click="selectLocale(code)"
       >
-        <span>{{ labels[code] || code }}</span>
+        <span>{{ labelOf(code) }}</span>
         <TgIcon v-if="code === locale" name="check" :size="18" :stroke="2.6" />
       </button>
     </div>

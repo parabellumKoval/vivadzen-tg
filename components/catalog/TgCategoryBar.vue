@@ -1,16 +1,27 @@
 <script setup lang="ts">
 import type { TgCategory } from '~/types/tg'
+import { normalizeCategorySlug } from '~/composables/useTgCatalog'
 
 const props = defineProps<{
   categories: TgCategory[]
   activeCategory?: string | null
 }>()
 
+const emit = defineEmits<{
+  select: [slug: string | null]
+}>()
+
 const { t } = useTgI18n()
 const { categoryPath } = useTgRouting()
 
+const activeSlug = computed(() => normalizeCategorySlug(props.activeCategory))
+
 const countOf = (category: TgCategory) => {
   return category.count ?? category.products_count ?? category.productsCount ?? category.meta?.products_count ?? null
+}
+
+const select = (slug: string | null) => {
+  emit('select', normalizeCategorySlug(slug))
 }
 </script>
 
@@ -19,8 +30,10 @@ const countOf = (category: TgCategory) => {
     <NuxtLink
       :to="categoryPath()"
       class="category-bar__pill"
-      :class="{ active: !activeCategory }"
+      exact-active-class="active"
+      :class="{ active: !activeSlug }"
       :prefetch="false"
+      @click="select(null)"
     >
       {{ t('all') }}
     </NuxtLink>
@@ -30,8 +43,11 @@ const countOf = (category: TgCategory) => {
       :key="category.slug || category.id"
       :to="categoryPath(category.slug)"
       class="category-bar__pill"
-      :class="{ active: category.slug === activeCategory }"
+      active-class="active"
+      exact-active-class="active"
+      :class="{ active: normalizeCategorySlug(category.slug) === activeSlug }"
       :prefetch="false"
+      @click="select(category.slug)"
     >
       {{ category.name }}
       <span v-if="countOf(category) !== null" class="category-bar__count">{{ countOf(category) }}</span>
@@ -73,7 +89,9 @@ const countOf = (category: TgCategory) => {
   text-transform: uppercase;
 }
 
-.category-bar__pill.active {
+.category-bar__pill.active,
+.category-bar__pill.router-link-active,
+.category-bar__pill.router-link-exact-active {
   background: var(--color-ink);
   color: var(--color-lime);
   box-shadow: var(--shadow-card-sm);
@@ -91,7 +109,9 @@ const countOf = (category: TgCategory) => {
   font-size: 10px;
 }
 
-.category-bar__pill.active .category-bar__count {
+.category-bar__pill.active .category-bar__count,
+.category-bar__pill.router-link-active .category-bar__count,
+.category-bar__pill.router-link-exact-active .category-bar__count {
   background: var(--color-accent);
   color: var(--color-white);
 }
