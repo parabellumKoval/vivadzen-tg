@@ -91,12 +91,14 @@ const parseJsonEnv = (value: string | undefined, fallback: Record<string, unknow
 }
 
 const TG_HOME_VIBES_DEFAULTS: Record<string, { tag?: string, icon?: string, bg?: string }> = {
-  houby: { tag: 'FUNGI', icon: 'mushroom', bg: 'magenta' },
-  'caje-kava': { tag: 'BREW', icon: 'leaf', bg: 'lime' },
-  entheogeny: { tag: 'TRIP', icon: 'sparkles', bg: 'accent' },
-  superpotraviny: { tag: 'FUEL', icon: 'heart', bg: 'primary' },
-  'darkove-zbozi': { tag: 'GIFT', icon: 'tag', bg: 'yellow' },
-  'ostatni-produkty': { tag: 'MORE', icon: 'box', bg: 'white' }
+  muhomory: { tag: 'AMANITA', icon: 'mushroom', bg: 'magenta' },
+  kanabis: { tag: 'GREEN', icon: 'leaf', bg: 'primary' },
+  'kava-kava': { tag: 'CHILL', icon: 'heart', bg: 'yellow' },
+  kanna: { tag: 'MOOD', icon: 'sparkles', bg: 'lime' },
+  akuamma: { tag: 'RELIEF', icon: 'shield', bg: 'white' },
+  kaapi: { tag: 'VINE', icon: 'globe', bg: 'accent' },
+  'gavayskaya-roza': { tag: 'ROSE', icon: 'flame', bg: 'magenta' },
+  koridalis: { tag: 'CALM', icon: 'circle', bg: 'primary' }
 }
 
 const parseHomeVibes = (raw: string | undefined) => {

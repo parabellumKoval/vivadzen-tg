@@ -395,12 +395,17 @@ onMounted(() => {
 }
 
 .home-vibes__track {
+  --vibe-track-gap: 10px;
+  --vibe-track-preview: 24px;
+
   display: flex;
   width: calc(100% + 16px);
   margin-right: -16px;
-  gap: 10px;
+  margin-left: -16px;
+  gap: var(--vibe-track-gap);
   padding-top: 8px;
   padding-right: 16px;
+  padding-left: 16px;
   padding-bottom: 10px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -417,7 +422,7 @@ onMounted(() => {
 .vibe-tile {
   position: relative;
   display: flex;
-  flex: 0 0 clamp(188px, 62vw, 250px);
+  flex: 0 0 calc((100% - (var(--vibe-track-gap) * 2) - var(--vibe-track-preview) + 16px) / 2);
   min-height: 168px;
   flex-direction: column;
   justify-content: space-between;
