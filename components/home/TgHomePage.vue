@@ -15,11 +15,13 @@ type TgHomeSection = {
   total: number
 }
 
-type TgVibeTileConfig = {
-  color?: string
-  textColor?: string
-  tag?: string
-  icon?: string
+type TgVibeTile = {
+  key: string
+  slug: string
+  label: string
+  tag: string
+  icon: string
+  bg: string
 }
 
 const { $api } = useNuxtApp()
@@ -33,6 +35,7 @@ const tgCatalogConfig = tgConfig.catalog || {}
 const baseCategoryId = normalizeCategoryId(tgCatalogConfig.baseCategoryId)
 const baseCategorySlug = normalizeCategorySlug(tgCatalogConfig.baseCategorySlug)
 const homeVibesConfig = (tgConfig.homeVibes || {}) as Record<string, { tag?: string, icon?: string, bg?: string, label?: string }>
+const homeVibeBackgrounds = ['lime', 'magenta', 'accent', 'primary', 'yellow', 'white']
 
 const categories = ref<TgCategory[]>([])
 const sections = ref<TgHomeSection[]>([])
@@ -44,22 +47,23 @@ const sectionIdOf = (category: TgCategory) => {
 }
 
 const vibeTiles = computed(() => {
-  return categories.value
-    .map((category) => {
+  return sections.value
+    .map((section, index) => {
+      const category = section.category
       const slug = normalizeCategorySlug(category.slug)
       if (!slug) return null
-      const vibe = homeVibesConfig[slug]
-      if (!vibe) return null
+
+      const vibe = homeVibesConfig[slug] || {}
       return {
         key: slug,
         slug,
         label: vibe.label || category.name || slug,
         tag: vibe.tag || '',
         icon: vibe.icon || 'tag',
-        bg: vibe.bg || 'lime'
+        bg: vibe.bg || homeVibeBackgrounds[index % homeVibeBackgrounds.length]
       }
     })
-    .filter((tile): tile is { key: string, slug: string, label: string, tag: string, icon: string, bg: string } => Boolean(tile))
+    .filter((tile): tile is TgVibeTile => Boolean(tile))
 })
 
 const perks = computed(() => [
@@ -77,7 +81,17 @@ const stripItems = computed(() => [
   t('home_strip_safe')
 ])
 
-const loadCategoryProducts = async (slug: string) => {
+const loadCategoryProducts = async (category: TgCategory) => {
+  const slug = normalizeCategorySlug(category.slug)
+  const categoryId = normalizeCategoryId(category.id)
+
+  if (!slug && !categoryId) {
+    return {
+      products: [],
+      total: 0
+    }
+  }
+
   const products: TgProduct[] = []
   const perPage = 100
   let page = 1
@@ -92,7 +106,8 @@ const loadCategoryProducts = async (slug: string) => {
         per_page: perPage,
         page,
         cache: true,
-        category_slug: slug
+        ...(categoryId ? { category_id: categoryId } : {}),
+        ...(slug ? { category_slug: slug } : {})
       }
     })
 
@@ -131,24 +146,14 @@ const refreshHome = async () => {
     categories.value = resolveScopedCatalogCategories(categoryTree, baseCategoryId, baseCategorySlug)
 
     sections.value = await Promise.all(categories.value.map(async (category) => {
-      const slug = normalizeCategorySlug(category.slug)
-
-      if (!slug) {
-        return {
-          category,
-          products: [],
-          total: 0
-        }
-      }
-
-      const { products, total } = await loadCategoryProducts(slug)
+      const { products, total } = await loadCategoryProducts(category)
 
       return {
         category,
         products,
         total
       }
-    }))
+    })).then((loadedSections) => loadedSections.filter((section) => section.products.length > 0))
   } catch (err) {
     categories.value = []
     sections.value = []
@@ -192,18 +197,20 @@ onMounted(() => {
     </section>
 
     <section v-if="vibeTiles.length" class="tg-page home-vibes">
-      <NuxtLink
-        v-for="tile in vibeTiles"
-        :key="tile.key"
-        :to="categoryPath(tile.slug)"
-        class="vibe-tile"
-        :class="`vibe-tile--${tile.bg}`"
-        :prefetch="false"
-      >
-        <span v-if="tile.tag" class="vibe-tile__tag">{{ tile.tag }}</span>
-        <TgIcon :name="tile.icon" :size="44" :stroke="2.2" class="vibe-tile__icon" />
-        <span class="vibe-tile__label">{{ tile.label }}</span>
-      </NuxtLink>
+      <div class="home-vibes__track">
+        <NuxtLink
+          v-for="tile in vibeTiles"
+          :key="tile.key"
+          :to="categoryPath(tile.slug)"
+          class="vibe-tile"
+          :class="`vibe-tile--${tile.bg}`"
+          :prefetch="false"
+        >
+          <span v-if="tile.tag" class="vibe-tile__tag">{{ tile.tag }}</span>
+          <TgIcon :name="tile.icon" :size="44" :stroke="2.2" class="vibe-tile__icon" />
+          <span class="vibe-tile__label">{{ tile.label }}</span>
+        </NuxtLink>
+      </div>
     </section>
 
     <section v-if="initialLoading" class="tg-page home-sections">
@@ -238,16 +245,12 @@ onMounted(() => {
           </NuxtLink>
         </div>
 
-        <div v-if="section.products.length" class="tg-grid">
+        <div class="tg-grid">
           <TgProductCard
             v-for="product in section.products"
             :key="product.id || product.slug"
             :product="product"
           />
-        </div>
-
-        <div v-else class="home-section__empty">
-          <p class="tg-empty__text">{{ t('empty_catalog') }}</p>
         </div>
       </article>
     </section>
@@ -421,8 +424,8 @@ onMounted(() => {
   border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
   padding: 14px 12px 12px;
-  background: var(--vibe-bg, var(--color-lime));
-  color: var(--vibe-fg, var(--color-ink));
+  background: var(--color-lime);
+  color: var(--color-ink);
   box-shadow: var(--shadow-card-sm);
   overflow: hidden;
   scroll-snap-align: start;
@@ -470,7 +473,7 @@ onMounted(() => {
   max-width: calc(100% - 32px);
   font-family: var(--font-display);
   font-size: clamp(20px, 6vw, 28px);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   line-height: 0.95;
   text-transform: uppercase;
   overflow-wrap: anywhere;
@@ -528,10 +531,6 @@ onMounted(() => {
 
 .home-section__line--title {
   width: 180px;
-}
-
-.home-section__empty {
-  padding: 12px 0 4px;
 }
 
 /* Perks */

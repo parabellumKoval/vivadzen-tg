@@ -1,14 +1,51 @@
+import fs from 'node:fs'
 import path from 'node:path'
+
+const initialEnvKeys = new Set(Object.keys(process.env))
+
+const parseEnvValue = (value: string) => {
+  const trimmed = value.trim()
+  const quote = trimmed[0]
+
+  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
+    return trimmed.slice(1, -1)
+  }
+
+  return trimmed
+}
+
+const loadEnvFile = (filePath: string, overrideLoadedEnv = false) => {
+  if (!fs.existsSync(filePath)) return
+
+  const content = fs.readFileSync(filePath, 'utf8')
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+    if (!match) continue
+
+    const [, key, rawValue] = match
+    if (initialEnvKeys.has(key)) continue
+    if (!overrideLoadedEnv && process.env[key] !== undefined) continue
+
+    process.env[key] = parseEnvValue(rawValue)
+  }
+}
+
+loadEnvFile(path.resolve(__dirname, '../../.env'))
+loadEnvFile(path.resolve(__dirname, '.env'), true)
 
 const HOST = process.env.HOST_IP || 'localhost'
 const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 const IS_VERCEL = Boolean(process.env.VERCEL)
+const IS_DEPLOYMENT_BUILD = IS_PRODUCTION && (IS_VERCEL || Boolean(process.env.CI))
 const VERCEL_SITE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
 const HOST_URL = process.env.NUXT_PUBLIC_SITE_URL
   || process.env.SITE_URL
+  || process.env.FRONTEND_URL
   || VERCEL_SITE_URL
   || (IS_PRODUCTION ? '' : `http://${HOST}:3001`)
-const SERVER_URL = process.env.SERVER_URL || (IS_PRODUCTION || IS_VERCEL ? '' : `http://${HOST}:8000`)
+const SERVER_URL = process.env.SERVER_URL
+  || process.env.BACKEND_URL
+  || (IS_PRODUCTION || IS_VERCEL ? '' : `http://${HOST}:8000`)
 const normalizePublicUrl = (value: string) => value.trim().replace(/\/+$/, '')
 const isLoopbackUrl = (value: string) => /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?)(?::\d+)?(?:\/|$)/i.test(value.trim())
 const API_SERVER_URL = normalizePublicUrl(
@@ -17,7 +54,7 @@ const API_SERVER_URL = normalizePublicUrl(
   || (SERVER_URL ? `${SERVER_URL}/api` : '')
 )
 
-if (IS_PRODUCTION && isLoopbackUrl(API_SERVER_URL)) {
+if (IS_DEPLOYMENT_BUILD && isLoopbackUrl(API_SERVER_URL)) {
   throw new Error('TG app production build cannot use a localhost API. Set NUXT_PUBLIC_API_BASE to a public HTTPS backend URL.')
 }
 const FRONT_DIR = path.resolve(__dirname, '../front')
