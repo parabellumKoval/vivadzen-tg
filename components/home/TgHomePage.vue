@@ -28,28 +28,11 @@ const { t } = useTgI18n()
 const ui = useTgUiStore()
 const { categoryPath, catalogPath } = useTgRouting()
 
-const tgCatalogConfig = (config.public.tg as any)?.catalog || {}
+const tgConfig = (config.public.tg as any) || {}
+const tgCatalogConfig = tgConfig.catalog || {}
 const baseCategoryId = normalizeCategoryId(tgCatalogConfig.baseCategoryId)
 const baseCategorySlug = normalizeCategorySlug(tgCatalogConfig.baseCategorySlug)
-const tgHomeVibesConfig = (config.public.tg as any)?.homeVibes || {}
-const defaultVibeConfigs = computed<TgVibeTileConfig[]>(() => {
-  return asArray<TgVibeTileConfig>(tgHomeVibesConfig.defaults).length
-    ? asArray<TgVibeTileConfig>(tgHomeVibesConfig.defaults)
-    : [{ color: 'var(--color-lime)', textColor: 'var(--color-ink)', tag: t('open_category'), icon: 'tag' }]
-})
-
-const vibeConfigMap = computed<Record<string, TgVibeTileConfig>>(() => {
-  const items = tgHomeVibesConfig.items || {}
-
-  return Object.entries(items).reduce((map, [key, value]) => {
-    const normalizedKey = String(key || '').trim().toLowerCase()
-    if (normalizedKey && value && typeof value === 'object') {
-      map[normalizedKey] = value as TgVibeTileConfig
-    }
-
-    return map
-  }, {} as Record<string, TgVibeTileConfig>)
-})
+const homeVibesConfig = (tgConfig.homeVibes || {}) as Record<string, { tag?: string, icon?: string, bg?: string, label?: string }>
 
 const categories = ref<TgCategory[]>([])
 const sections = ref<TgHomeSection[]>([])
@@ -60,38 +43,23 @@ const sectionIdOf = (category: TgCategory) => {
   return `category-section-${category.slug || category.id || 'item'}`
 }
 
-const getVibeConfig = (category: TgCategory, index: number) => {
-  const fallback = defaultVibeConfigs.value[index % defaultVibeConfigs.value.length] || {}
-  const id = normalizeCategoryId(category.id)
-  const slug = normalizeCategorySlug(category.slug)
-  const byId = id ? vibeConfigMap.value[id.toLowerCase()] : null
-  const bySlug = slug ? vibeConfigMap.value[slug] : null
-
-  return {
-    ...fallback,
-    ...byId,
-    ...bySlug
-  }
-}
-
 const vibeTiles = computed(() => {
-  return categories.value.map((category, index) => {
-    const config = getVibeConfig(category, index)
-    const slug = normalizeCategorySlug(category.slug)
-    const label = String(category.name || category.slug || category.id || '').trim()
-
-    return {
-      key: slug || normalizeCategoryId(category.id) || `category-${index}`,
-      label,
-      tag: String(config.tag || t('open_category')),
-      icon: String(config.icon || 'tag'),
-      to: slug ? categoryPath(slug) : catalogPath(),
-      style: {
-        '--vibe-bg': config.color || 'var(--color-lime)',
-        '--vibe-fg': config.textColor || 'var(--color-ink)'
+  return categories.value
+    .map((category) => {
+      const slug = normalizeCategorySlug(category.slug)
+      if (!slug) return null
+      const vibe = homeVibesConfig[slug]
+      if (!vibe) return null
+      return {
+        key: slug,
+        slug,
+        label: vibe.label || category.name || slug,
+        tag: vibe.tag || '',
+        icon: vibe.icon || 'tag',
+        bg: vibe.bg || 'lime'
       }
-    }
-  }).filter((tile) => tile.label)
+    })
+    .filter((tile): tile is { key: string, slug: string, label: string, tag: string, icon: string, bg: string } => Boolean(tile))
 })
 
 const perks = computed(() => [
@@ -224,20 +192,18 @@ onMounted(() => {
     </section>
 
     <section v-if="vibeTiles.length" class="tg-page home-vibes">
-      <div class="home-vibes__track">
-        <NuxtLink
-          v-for="tile in vibeTiles"
-          :key="tile.key"
-          :to="tile.to"
-          class="vibe-tile"
-          :style="tile.style"
-          :prefetch="false"
-        >
-          <span class="vibe-tile__tag">{{ tile.tag }}</span>
-          <TgIcon :name="tile.icon" :size="54" :stroke="2.2" class="vibe-tile__icon" />
-          <span class="vibe-tile__label">{{ tile.label }}</span>
-        </NuxtLink>
-      </div>
+      <NuxtLink
+        v-for="tile in vibeTiles"
+        :key="tile.key"
+        :to="categoryPath(tile.slug)"
+        class="vibe-tile"
+        :class="`vibe-tile--${tile.bg}`"
+        :prefetch="false"
+      >
+        <span v-if="tile.tag" class="vibe-tile__tag">{{ tile.tag }}</span>
+        <TgIcon :name="tile.icon" :size="44" :stroke="2.2" class="vibe-tile__icon" />
+        <span class="vibe-tile__label">{{ tile.label }}</span>
+      </NuxtLink>
     </section>
 
     <section v-if="initialLoading" class="tg-page home-sections">
@@ -464,10 +430,12 @@ onMounted(() => {
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.vibe-tile:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 0 var(--color-ink);
-}
+.vibe-tile--lime { background: var(--color-lime); }
+.vibe-tile--magenta { background: var(--color-magenta); color: var(--color-white); }
+.vibe-tile--accent { background: var(--color-accent); color: var(--color-white); }
+.vibe-tile--primary { background: var(--color-primary); color: var(--color-white); }
+.vibe-tile--yellow { background: var(--color-yellow); }
+.vibe-tile--white { background: var(--color-white); }
 
 .vibe-tile__tag {
   display: inline-flex;

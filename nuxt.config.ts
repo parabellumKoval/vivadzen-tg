@@ -53,7 +53,29 @@ const parseJsonEnv = (value: string | undefined, fallback: Record<string, unknow
   }
 }
 
-const TG_HOME_VIBES = parseJsonEnv(process.env.NUXT_PUBLIC_TG_HOME_VIBES, {})
+const TG_HOME_VIBES_DEFAULTS: Record<string, { tag?: string, icon?: string, bg?: string }> = {
+  houby: { tag: 'FUNGI', icon: 'mushroom', bg: 'magenta' },
+  'caje-kava': { tag: 'BREW', icon: 'leaf', bg: 'lime' },
+  entheogeny: { tag: 'TRIP', icon: 'sparkles', bg: 'accent' },
+  superpotraviny: { tag: 'FUEL', icon: 'heart', bg: 'primary' },
+  'darkove-zbozi': { tag: 'GIFT', icon: 'tag', bg: 'yellow' },
+  'ostatni-produkty': { tag: 'MORE', icon: 'box', bg: 'white' }
+}
+
+const parseHomeVibes = (raw: string | undefined) => {
+  if (!raw) return TG_HOME_VIBES_DEFAULTS
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, { tag?: string, icon?: string, bg?: string }>
+    }
+  } catch (err) {
+    console.warn('[tg] Failed to parse NUXT_PUBLIC_TG_HOME_VIBES, using defaults:', err)
+  }
+  return TG_HOME_VIBES_DEFAULTS
+}
+
+const TG_HOME_VIBES = parseHomeVibes(process.env.NUXT_PUBLIC_TG_HOME_VIBES)
 
 export default defineNuxtConfig({
   ssr: false,
@@ -124,14 +146,7 @@ export default defineNuxtConfig({
           baseCategoryId: Number.isFinite(TG_BASE_CATEGORY_ID) ? TG_BASE_CATEGORY_ID : null,
           baseCategorySlug: TG_BASE_CATEGORY_SLUG || null,
         },
-        homeVibes: {
-          defaults: [
-            { color: 'var(--color-lime)', textColor: 'var(--color-ink)', tag: 'Chill', icon: 'leaf' },
-            { color: 'var(--color-magenta)', textColor: 'var(--color-white)', tag: 'Magic', icon: 'mushroom' },
-            { color: 'var(--color-accent)', textColor: 'var(--color-white)', tag: 'Trip', icon: 'sparkles' }
-          ],
-          items: TG_HOME_VIBES
-        },
+        homeVibes: TG_HOME_VIBES,
         regionAliases: {
           global: 'zz'
         },
