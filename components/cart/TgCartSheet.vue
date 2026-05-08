@@ -51,6 +51,8 @@ const checkout = async () => {
         </article>
       </div>
 
+      <TgFreeDeliveryProgress :total="cart.totalPrice" />
+
       <div class="cart-sheet__summary">
         <span>{{ t('total') }}</span>
         <strong>{{ formatMoney(cart.totalPrice, cart.items[0]?.currency) }}</strong>

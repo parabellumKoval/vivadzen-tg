@@ -58,7 +58,9 @@ const productQty = computed(() => {
 
 const description = computed(() => descriptionOf(product.value))
 const descriptionText = computed(() => description.value.replace(/<[^>]+>/g, '').trim())
-const shouldCollapse = computed(() => descriptionText.value.length > 280)
+const shouldCollapse = computed(() => descriptionText.value.length > 140)
+
+const productInStock = computed(() => isInStock(activePriceSource.value))
 
 const addToCart = () => {
   if (!product.value) return
@@ -91,14 +93,26 @@ const addToCart = () => {
       </div>
 
       <div class="tg-page product-page__content">
-        <span v-if="hasSale(activePriceSource)" class="product-page__badge">{{ t('sale') }}</span>
+        <div class="product-page__badges">
+          <span v-if="hasSale(activePriceSource)" class="tg-pill tg-pill--accent">{{ t('sale') }}</span>
+          <span class="tg-pill" :class="productInStock ? 'tg-pill--lime' : 'tg-pill--ink'">
+            <TgIcon :name="productInStock ? 'check' : 'close'" :size="12" :stroke="3" />
+            {{ productInStock ? t('in_stock') : t('out_of_stock') }}
+          </span>
+        </div>
+
         <h1 class="product-page__title">{{ product.name }}</h1>
 
-        <div class="product-page__price">
-          <span v-if="oldPriceOf(activePriceSource)" class="product-page__old">
-            {{ formatMoney(oldPriceOf(activePriceSource), currencyOf(activePriceSource)) }}
+        <div class="product-page__price-card">
+          <div class="product-page__price">
+            <strong>{{ formatMoney(priceOf(activePriceSource), currencyOf(activePriceSource)) }}</strong>
+            <span v-if="oldPriceOf(activePriceSource) > priceOf(activePriceSource)" class="product-page__old">
+              {{ formatMoney(oldPriceOf(activePriceSource), currencyOf(activePriceSource)) }}
+            </span>
+          </div>
+          <span v-if="hasSale(activePriceSource)" class="product-page__save">
+            -{{ Math.round((1 - priceOf(activePriceSource) / oldPriceOf(activePriceSource)) * 100) }}%
           </span>
-          <strong>{{ formatMoney(priceOf(activePriceSource), currencyOf(activePriceSource)) }}</strong>
         </div>
 
         <TgVariantPicker
@@ -108,18 +122,26 @@ const addToCart = () => {
           :label="t('choose_variant')"
         />
 
-        <div v-if="description" class="product-page__desc" :class="{ collapsed: shouldCollapse && !expanded }">
-          <div v-html="description" />
-        </div>
+        <TgProductDelivery />
 
-        <button
-          v-if="shouldCollapse"
-          type="button"
-          class="product-page__read"
-          @click="expanded = !expanded"
-        >
-          {{ expanded ? t('hide') : t('read_more') }}
-        </button>
+        <div v-if="description" class="product-page__desc-wrap">
+          <div
+            class="product-page__desc"
+            :class="{ collapsed: shouldCollapse && !expanded }"
+          >
+            <div v-html="description" />
+            <div v-if="shouldCollapse && !expanded" class="product-page__desc-fade" />
+          </div>
+
+          <button
+            v-if="shouldCollapse"
+            type="button"
+            class="product-page__read"
+            @click="expanded = !expanded"
+          >
+            {{ expanded ? t('hide') : t('read_more') }}
+          </button>
+        </div>
       </div>
 
       <div class="product-page__sticky">
@@ -175,42 +197,77 @@ const addToCart = () => {
 
 .product-page__content {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
-.product-page__badge {
-  width: max-content;
-  border-radius: var(--radius-sm);
-  background: var(--color-danger);
-  color: var(--color-white);
-  padding: 3px 7px;
-  font-size: 10px;
-  font-weight: 700;
+.product-page__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.product-page__badges .tg-pill {
+  gap: 4px;
 }
 
 .product-page__title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.product-page__price-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-card);
 }
 
 .product-page__price {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .product-page__price strong {
-  color: var(--color-accent);
-  font-size: 22px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
 }
 
 .product-page__old {
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: line-through;
+}
+
+.product-page__save {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-white);
+  padding: 5px 10px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.product-page__desc-wrap {
+  display: grid;
+  gap: 8px;
 }
 
 .product-page__desc {
@@ -222,17 +279,29 @@ const addToCart = () => {
 }
 
 .product-page__desc.collapsed {
-  max-height: 190px;
+  max-height: 110px;
+}
+
+.product-page__desc-fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 70px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 245, 225, 0) 0%, rgba(255, 245, 225, 0.85) 60%, var(--color-bg) 100%);
 }
 
 .product-page__read {
   width: max-content;
   border: 0;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   padding: 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .product-page__sticky {

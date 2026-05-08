@@ -135,5 +135,16 @@ export default {
   payment_default_cash: 'Hotově',
   payment_card_online: 'Platba kartou',
   payment_bank_transfer: 'Bankovní převod',
-  payment_messenger_cod: 'Messenger dobírka'
+  payment_messenger_cod: 'Messenger dobírka',
+  in_stock: 'Skladem',
+  out_of_stock: 'Není skladem',
+  product_delivery_title: 'Doprava a platba',
+  delivery_from: 'od',
+  payment_methods_short: 'Platba',
+  more: 'Více',
+  free_delivery_unlocked: 'Doprava zdarma aktivována',
+  free_delivery_left: 'Do dopravy zdarma chybí {amount}',
+  free_delivery_from: 'Zdarma od {amount}',
+  supheader_express: 'Rychlá expresní doprava',
+  supheader_free_from: 'Doprava zdarma od {amount}'
 } satisfies TgLocaleMessages

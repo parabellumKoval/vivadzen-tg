@@ -135,5 +135,16 @@ export default {
   payment_default_cash: 'Наличные',
   payment_card_online: 'Оплата картой',
   payment_bank_transfer: 'Банковский перевод',
-  payment_messenger_cod: 'Messenger COD'
+  payment_messenger_cod: 'Messenger COD',
+  in_stock: 'В наличии',
+  out_of_stock: 'Нет в наличии',
+  product_delivery_title: 'Доставка и оплата',
+  delivery_from: 'от',
+  payment_methods_short: 'Оплата',
+  more: 'Подробнее',
+  free_delivery_unlocked: 'Бесплатная доставка активирована',
+  free_delivery_left: 'До бесплатной доставки {amount}',
+  free_delivery_from: 'Бесплатно от {amount}',
+  supheader_express: 'Быстрая экспресс-доставка',
+  supheader_free_from: 'Бесплатная доставка от {amount}'
 } satisfies TgLocaleMessages

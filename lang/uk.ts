@@ -135,5 +135,16 @@ export default {
   payment_default_cash: 'Готівка',
   payment_card_online: 'Оплата карткою',
   payment_bank_transfer: 'Банківський переказ',
-  payment_messenger_cod: 'Messenger COD'
+  payment_messenger_cod: 'Messenger COD',
+  in_stock: 'В наявності',
+  out_of_stock: 'Немає в наявності',
+  product_delivery_title: 'Доставка та оплата',
+  delivery_from: 'від',
+  payment_methods_short: 'Оплата',
+  more: 'Детальніше',
+  free_delivery_unlocked: 'Безкоштовна доставка активована',
+  free_delivery_left: 'До безкоштовної доставки {amount}',
+  free_delivery_from: 'Безкоштовно від {amount}',
+  supheader_express: 'Швидка експрес-доставка',
+  supheader_free_from: 'Безкоштовна доставка від {amount}'
 } satisfies TgLocaleMessages

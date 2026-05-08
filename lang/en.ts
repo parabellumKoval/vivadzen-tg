@@ -135,5 +135,16 @@ export default {
   payment_default_cash: 'Cash',
   payment_card_online: 'Card online',
   payment_bank_transfer: 'Bank transfer',
-  payment_messenger_cod: 'Messenger COD'
+  payment_messenger_cod: 'Messenger COD',
+  in_stock: 'In stock',
+  out_of_stock: 'Out of stock',
+  product_delivery_title: 'Delivery & payment',
+  delivery_from: 'from',
+  payment_methods_short: 'Payments',
+  more: 'More',
+  free_delivery_unlocked: 'Free delivery unlocked',
+  free_delivery_left: 'Add {amount} for free delivery',
+  free_delivery_from: 'Free from {amount}',
+  supheader_express: 'Fast express delivery',
+  supheader_free_from: 'Free delivery from {amount}'
 } satisfies TgLocaleMessages

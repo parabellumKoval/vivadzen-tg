@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
 .tg-topbar {
   position: fixed;
   z-index: 100;
-  top: 0;
+  top: 28px;
   right: 0;
   left: 0;
   display: grid;

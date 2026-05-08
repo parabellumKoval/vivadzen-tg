@@ -448,6 +448,7 @@ const submit = async () => {
               <strong>{{ formatMoney(item.price * item.quantity, item.currency) }}</strong>
             </div>
           </div>
+          <TgFreeDeliveryProgress :total="cart.totalPrice" />
         </section>
 
         <section class="checkout-step" :class="stepClass(1)">
