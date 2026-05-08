@@ -42,6 +42,18 @@ const TG_BASE_CATEGORY_ID = process.env.NUXT_PUBLIC_TG_BASE_CATEGORY_ID
   ? Number.parseInt(process.env.NUXT_PUBLIC_TG_BASE_CATEGORY_ID, 10)
   : 118
 const TG_BASE_CATEGORY_SLUG = (process.env.NUXT_PUBLIC_TG_BASE_CATEGORY_SLUG || 'basic').trim()
+const parseJsonEnv = (value: string | undefined, fallback: Record<string, unknown>) => {
+  if (!value) return fallback
+
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
+const TG_HOME_VIBES = parseJsonEnv(process.env.NUXT_PUBLIC_TG_HOME_VIBES, {})
 
 export default defineNuxtConfig({
   ssr: false,
@@ -111,6 +123,14 @@ export default defineNuxtConfig({
         catalog: {
           baseCategoryId: Number.isFinite(TG_BASE_CATEGORY_ID) ? TG_BASE_CATEGORY_ID : null,
           baseCategorySlug: TG_BASE_CATEGORY_SLUG || null,
+        },
+        homeVibes: {
+          defaults: [
+            { color: 'var(--color-lime)', textColor: 'var(--color-ink)', tag: 'Chill', icon: 'leaf' },
+            { color: 'var(--color-magenta)', textColor: 'var(--color-white)', tag: 'Magic', icon: 'mushroom' },
+            { color: 'var(--color-accent)', textColor: 'var(--color-white)', tag: 'Trip', icon: 'sparkles' }
+          ],
+          items: TG_HOME_VIBES
         },
         regionAliases: {
           global: 'zz'

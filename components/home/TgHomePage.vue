@@ -15,6 +15,13 @@ type TgHomeSection = {
   total: number
 }
 
+type TgVibeTileConfig = {
+  color?: string
+  textColor?: string
+  tag?: string
+  icon?: string
+}
+
 const { $api } = useNuxtApp()
 const config = useRuntimeConfig()
 const { t } = useTgI18n()
@@ -24,6 +31,25 @@ const { categoryPath, catalogPath } = useTgRouting()
 const tgCatalogConfig = (config.public.tg as any)?.catalog || {}
 const baseCategoryId = normalizeCategoryId(tgCatalogConfig.baseCategoryId)
 const baseCategorySlug = normalizeCategorySlug(tgCatalogConfig.baseCategorySlug)
+const tgHomeVibesConfig = (config.public.tg as any)?.homeVibes || {}
+const defaultVibeConfigs = computed<TgVibeTileConfig[]>(() => {
+  return asArray<TgVibeTileConfig>(tgHomeVibesConfig.defaults).length
+    ? asArray<TgVibeTileConfig>(tgHomeVibesConfig.defaults)
+    : [{ color: 'var(--color-lime)', textColor: 'var(--color-ink)', tag: t('open_category'), icon: 'tag' }]
+})
+
+const vibeConfigMap = computed<Record<string, TgVibeTileConfig>>(() => {
+  const items = tgHomeVibesConfig.items || {}
+
+  return Object.entries(items).reduce((map, [key, value]) => {
+    const normalizedKey = String(key || '').trim().toLowerCase()
+    if (normalizedKey && value && typeof value === 'object') {
+      map[normalizedKey] = value as TgVibeTileConfig
+    }
+
+    return map
+  }, {} as Record<string, TgVibeTileConfig>)
+})
 
 const categories = ref<TgCategory[]>([])
 const sections = ref<TgHomeSection[]>([])
@@ -34,11 +60,39 @@ const sectionIdOf = (category: TgCategory) => {
   return `category-section-${category.slug || category.id || 'item'}`
 }
 
-const vibeTiles = computed(() => [
-  { key: 'cbd', label: t('home_vibe_cbd_label'), tag: t('home_vibe_cbd_tag'), icon: 'leaf', bg: 'lime' },
-  { key: 'mushrooms', label: t('home_vibe_mushrooms_label'), tag: t('home_vibe_mushrooms_tag'), icon: 'mushroom', bg: 'magenta' },
-  { key: 'entheogens', label: t('home_vibe_entheogens_label'), tag: t('home_vibe_entheogens_tag'), icon: 'sparkles', bg: 'accent' }
-])
+const getVibeConfig = (category: TgCategory, index: number) => {
+  const fallback = defaultVibeConfigs.value[index % defaultVibeConfigs.value.length] || {}
+  const id = normalizeCategoryId(category.id)
+  const slug = normalizeCategorySlug(category.slug)
+  const byId = id ? vibeConfigMap.value[id.toLowerCase()] : null
+  const bySlug = slug ? vibeConfigMap.value[slug] : null
+
+  return {
+    ...fallback,
+    ...byId,
+    ...bySlug
+  }
+}
+
+const vibeTiles = computed(() => {
+  return categories.value.map((category, index) => {
+    const config = getVibeConfig(category, index)
+    const slug = normalizeCategorySlug(category.slug)
+    const label = String(category.name || category.slug || category.id || '').trim()
+
+    return {
+      key: slug || normalizeCategoryId(category.id) || `category-${index}`,
+      label,
+      tag: String(config.tag || t('open_category')),
+      icon: String(config.icon || 'tag'),
+      to: slug ? categoryPath(slug) : catalogPath(),
+      style: {
+        '--vibe-bg': config.color || 'var(--color-lime)',
+        '--vibe-fg': config.textColor || 'var(--color-ink)'
+      }
+    }
+  }).filter((tile) => tile.label)
+})
 
 const perks = computed(() => [
   { icon: 'truck', title: t('perk_discreet_ship_title'), text: t('perk_discreet_ship_text') },
@@ -169,19 +223,21 @@ onMounted(() => {
       </div>
     </section>
 
-    <section class="tg-page home-vibes">
-      <NuxtLink
-        v-for="tile in vibeTiles"
-        :key="tile.key"
-        :to="catalogPath()"
-        class="vibe-tile"
-        :class="`vibe-tile--${tile.bg}`"
-        :prefetch="false"
-      >
-        <span class="vibe-tile__tag">{{ tile.tag }}</span>
-        <TgIcon :name="tile.icon" :size="44" :stroke="2.2" class="vibe-tile__icon" />
-        <span class="vibe-tile__label">{{ tile.label }}</span>
-      </NuxtLink>
+    <section v-if="vibeTiles.length" class="tg-page home-vibes">
+      <div class="home-vibes__track">
+        <NuxtLink
+          v-for="tile in vibeTiles"
+          :key="tile.key"
+          :to="tile.to"
+          class="vibe-tile"
+          :style="tile.style"
+          :prefetch="false"
+        >
+          <span class="vibe-tile__tag">{{ tile.tag }}</span>
+          <TgIcon :name="tile.icon" :size="54" :stroke="2.2" class="vibe-tile__icon" />
+          <span class="vibe-tile__label">{{ tile.label }}</span>
+        </NuxtLink>
+      </div>
     </section>
 
     <section v-if="initialLoading" class="tg-page home-sections">
@@ -364,56 +420,92 @@ onMounted(() => {
 
 /* Vibe tiles */
 .home-vibes {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  padding-top: 8px;
+  padding-right: 0;
+  overflow: hidden;
+}
+
+.home-vibes__track {
+  display: flex;
+  width: calc(100% + 16px);
+  margin-right: -16px;
   gap: 10px;
   padding-top: 8px;
+  padding-right: 16px;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-left: 16px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.home-vibes__track::-webkit-scrollbar {
+  display: none;
 }
 
 .vibe-tile {
   position: relative;
   display: flex;
-  aspect-ratio: 1 / 1.05;
+  flex: 0 0 clamp(188px, 62vw, 250px);
+  min-height: 168px;
   flex-direction: column;
   justify-content: space-between;
   border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
-  padding: 12px 10px 10px;
-  color: var(--color-ink);
+  padding: 14px 12px 12px;
+  background: var(--vibe-bg, var(--color-lime));
+  color: var(--vibe-fg, var(--color-ink));
   box-shadow: var(--shadow-card-sm);
   overflow: hidden;
+  scroll-snap-align: start;
+  transform: translateZ(0);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.vibe-tile--lime { background: var(--color-lime); }
-.vibe-tile--magenta { background: var(--color-magenta); color: var(--color-white); }
-.vibe-tile--accent { background: var(--color-accent); color: var(--color-white); }
+.vibe-tile:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 0 var(--color-ink);
+}
 
 .vibe-tile__tag {
   display: inline-flex;
+  position: relative;
+  z-index: 1;
   width: max-content;
+  max-width: 100%;
   border: 2px solid currentColor;
   border-radius: var(--radius-full);
   padding: 3px 8px;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.08em;
+  line-height: 1;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vibe-tile__icon {
   position: absolute;
   top: 50%;
-  right: -6px;
-  transform: translateY(-50%) rotate(-8deg);
+  right: -10px;
+  transform: translateY(-50%) rotate(-10deg);
   opacity: 0.95;
 }
 
 .vibe-tile__label {
+  position: relative;
+  z-index: 1;
+  max-width: calc(100% - 32px);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: clamp(20px, 6vw, 28px);
   letter-spacing: -0.01em;
-  line-height: 1;
+  line-height: 0.95;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 /* Sections */
