@@ -67,7 +67,8 @@ const addToCart = () => {
       />
 
       <button v-else type="button" class="product-card__btn" @click="addToCart">
-        + {{ t('add') }}
+        <TgIcon name="plus" :size="14" :stroke="2.6" />
+        {{ t('add') }}
       </button>
     </div>
 
@@ -79,19 +80,25 @@ const addToCart = () => {
 .product-card {
   display: flex;
   overflow: hidden;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
-  background: #fafafa;
-  box-shadow: var(--shadow-card);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card-sm);
   flex-direction: column;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.product-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-card);
 }
 
 .product-card__image-wrap {
   position: relative;
   display: block;
   aspect-ratio: 1 / 1;
-  /* background: var(--color-bg-card); */
-  background: #fff;
-  border-bottom: 1px solid #eee;
+  background: var(--color-bg-input);
+  border-bottom: 2px solid var(--color-ink);
 }
 
 .product-card__image {
@@ -105,12 +112,16 @@ const addToCart = () => {
   position: absolute;
   top: 8px;
   left: 8px;
-  border-radius: var(--radius-sm);
-  background: var(--color-danger);
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-magenta);
   color: var(--color-white);
-  padding: 3px 7px;
+  padding: 3px 9px;
+  font-family: var(--font-display);
   font-size: 10px;
-  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
 }
 
 .product-card__body {
@@ -124,17 +135,17 @@ const addToCart = () => {
   display: -webkit-box;
   overflow: hidden;
   flex: 1;
-  color: var(--color-text);
+  color: var(--color-ink);
   font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .product-card__price-row {
   display: flex;
-  margin-top: 6px;
+  margin-top: 8px;
   align-items: baseline;
   gap: 6px;
   flex-wrap: wrap;
@@ -147,21 +158,33 @@ const addToCart = () => {
 }
 
 .product-card__price {
-  color: var(--color-accent);
-  font-size: 15px;
-  font-weight: 700;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: -0.01em;
 }
 
 .product-card__btn {
+  display: inline-flex;
   width: 100%;
-  min-height: 34px;
+  min-height: 36px;
   margin-top: 10px;
-  border: 0;
-  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.product-card__btn:hover {
   background: var(--color-primary);
   color: var(--color-white);
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .product-card__counter {

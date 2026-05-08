@@ -80,10 +80,14 @@ export default defineNuxtConfig({
       title: 'Vivadzen',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover' },
-        { name: 'theme-color', content: '#fff7ed' },
+        { name: 'theme-color', content: '#fff5e1' },
         { name: 'robots', content: 'noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate' },
         { name: 'googlebot', content: 'noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate' },
         { name: 'bingbot', content: 'noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate' }
+      ],
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }
       ]
     }
   },

@@ -429,7 +429,7 @@ const submit = async () => {
     <form class="tg-page checkout-page" @submit.prevent="submit">
       <div v-if="!cart.items.length" class="tg-empty">
         <div>
-          <div class="tg-empty__icon">□</div>
+          <div class="tg-empty__icon"><TgIcon name="bag" :size="32" :stroke="2.2" /></div>
           <p class="tg-empty__title">{{ t('cart_empty') }}</p>
           <NuxtLink :to="catalogPath()" class="tg-btn checkout-page__empty-btn">{{ t('back_to_catalog') }}</NuxtLink>
         </div>
@@ -439,7 +439,7 @@ const submit = async () => {
         <section class="checkout-card">
           <button type="button" class="checkout-card__summary" @click="expandedCart = !expandedCart">
             <span>{{ cart.totalQty }} · {{ formatMoney(cart.totalPrice, cart.items[0]?.currency) }}</span>
-            <span>{{ expandedCart ? '↑' : '↓' }}</span>
+            <TgIcon :name="expandedCart ? 'chevron-up' : 'chevron-down'" :size="18" :stroke="2.4" />
           </button>
           <div v-if="expandedCart" class="checkout-card__items">
             <div v-for="item in cart.items" :key="`${item.productId}-${item.variantId}`" class="checkout-item">

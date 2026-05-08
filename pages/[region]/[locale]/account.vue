@@ -299,16 +299,25 @@ onMounted(async () => {
 
       <div class="settings-list">
         <div class="settings-list__row">
-          <span>{{ t('language') }}</span>
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="globe" :size="18" :stroke="2.2" /></span>
+            {{ t('language') }}
+          </span>
           <strong>{{ locale.toUpperCase() }}</strong>
         </div>
         <NuxtLink :to="pathFor('orders')" class="settings-list__row">
-          <span>{{ t('order_history') }}</span>
-          <strong>›</strong>
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="package" :size="18" :stroke="2.2" /></span>
+            {{ t('order_history') }}
+          </span>
+          <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
         </NuxtLink>
         <NuxtLink :to="pathFor('about')" class="settings-list__row">
-          <span>{{ t('about') }}</span>
-          <strong>›</strong>
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="info" :size="18" :stroke="2.2" /></span>
+            {{ t('about') }}
+          </span>
+          <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
         </NuxtLink>
       </div>
     </section>
@@ -465,27 +474,48 @@ onMounted(async () => {
 
 .settings-list {
   overflow: hidden;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
   background: var(--color-white);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card-sm);
 }
 
 .settings-list__row {
   display: flex;
-  min-height: 52px;
-  border-bottom: 1px solid var(--color-border);
+  min-height: 56px;
+  border-bottom: 2px solid var(--color-ink);
   padding: 0 16px;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .settings-list__row:last-child {
   border-bottom: 0;
 }
 
+.settings-list__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-list__icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  place-items: center;
+}
+
 .settings-list__row strong {
-  color: var(--color-primary);
+  font-family: var(--font-display);
+  color: var(--color-accent-dark);
 }
 </style>

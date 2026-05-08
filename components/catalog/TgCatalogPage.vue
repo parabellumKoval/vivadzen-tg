@@ -72,7 +72,7 @@ const count = computed(() => Number(meta.value?.total || products.value.length |
 
       <div v-else class="tg-empty">
         <div>
-          <div class="tg-empty__icon">□</div>
+          <div class="tg-empty__icon"><TgIcon name="search" :size="32" :stroke="2.2" /></div>
           <p class="tg-empty__title">{{ t('empty_catalog') }}</p>
         </div>
       </div>

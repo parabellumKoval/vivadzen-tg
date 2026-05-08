@@ -45,7 +45,9 @@ const checkout = async () => {
               </div>
             </div>
           </div>
-          <button type="button" class="cart-item__remove" @click="cart.removeItem(item.productId, item.variantId)">×</button>
+          <button type="button" class="cart-item__remove" aria-label="Remove" @click="cart.removeItem(item.productId, item.variantId)">
+            <TgIcon name="close" :size="16" :stroke="2.4" />
+          </button>
         </article>
       </div>
 
@@ -55,13 +57,14 @@ const checkout = async () => {
       </div>
 
       <button type="button" class="tg-btn tg-btn--accent" @click="checkout">
+        <TgIcon name="lightning" :size="18" :stroke="2.2" />
         {{ t('checkout_now') }}
       </button>
     </div>
 
     <div v-else class="tg-empty">
       <div>
-        <div class="tg-empty__icon">□</div>
+        <div class="tg-empty__icon"><TgIcon name="bag" :size="32" :stroke="2.2" /></div>
         <p class="tg-empty__title">{{ t('cart_empty') }}</p>
         <p class="tg-empty__text">{{ t('back_to_catalog') }}</p>
       </div>
@@ -85,9 +88,11 @@ const checkout = async () => {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) 28px;
   gap: 10px;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-md);
-  background: var(--color-bg-card);
+  background: var(--color-white);
   padding: 10px;
+  box-shadow: var(--shadow-card-sm);
 }
 
 .cart-item__image {
@@ -134,27 +139,31 @@ const checkout = async () => {
 }
 
 .cart-item__remove {
+  display: grid;
   width: 28px;
   height: 28px;
-  border: 0;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-full);
-  background: rgba(229, 62, 62, 0.12);
-  color: var(--color-danger);
-  font-size: 20px;
+  background: var(--color-white);
+  color: var(--color-ink);
+  place-items: center;
   line-height: 1;
 }
 
 .cart-sheet__summary {
   display: flex;
-  border-top: 1px solid var(--color-border);
+  border-top: 2px dashed var(--color-ink);
   padding-top: 14px;
   align-items: center;
   justify-content: space-between;
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-transform: uppercase;
 }
 
 .cart-sheet__summary strong {
-  color: var(--color-accent);
-  font-size: 18px;
+  color: var(--color-accent-dark);
+  font-family: var(--font-display);
+  font-size: 22px;
 }
 </style>

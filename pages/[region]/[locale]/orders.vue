@@ -53,14 +53,15 @@ const orderTotal = (order: TgOrder) => {
             <strong>{{ formatMoney(orderTotal(order), order.currency) }}</strong>
           </div>
           <button type="button" class="order-card__more" @click="selectedOrder = order">
-            {{ t('details') }} ›
+            {{ t('details') }}
+            <TgIcon name="chevron-right" :size="14" :stroke="2.4" />
           </button>
         </article>
       </div>
 
       <div v-else class="tg-empty">
         <div>
-          <div class="tg-empty__icon">□</div>
+          <div class="tg-empty__icon"><TgIcon name="package" :size="32" :stroke="2.2" /></div>
           <p class="tg-empty__title">{{ t('no_orders') }}</p>
           <NuxtLink :to="catalogPath()" class="tg-btn orders-page__btn">{{ t('back_to_catalog') }}</NuxtLink>
         </div>
@@ -104,10 +105,11 @@ const orderTotal = (order: TgOrder) => {
 .order-card {
   display: grid;
   gap: 8px;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
   background: var(--color-white);
   padding: 14px;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card-sm);
 }
 
 .order-card__head,
@@ -138,14 +140,19 @@ const orderTotal = (order: TgOrder) => {
 }
 
 .order-card__more {
+  display: inline-flex;
   width: max-content;
   justify-self: end;
+  align-items: center;
+  gap: 4px;
   border: 0;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   padding: 0;
-  font-size: 13px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .orders-page__btn {

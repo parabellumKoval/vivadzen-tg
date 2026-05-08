@@ -43,7 +43,7 @@ const countOf = (category: TgCategory) => {
 .category-bar {
   position: sticky;
   z-index: 50;
-  top: 56px;
+  top: 60px;
   display: flex;
   gap: 8px;
   overflow-x: auto;
@@ -59,27 +59,40 @@ const countOf = (category: TgCategory) => {
 .category-bar__pill {
   display: inline-flex;
   flex-shrink: 0;
-  border: 1.5px solid var(--color-border);
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-full);
   background: var(--color-white);
-  color: var(--color-text-muted);
-  padding: 7px 14px;
+  color: var(--color-ink);
+  padding: 8px 14px;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .category-bar__pill.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: var(--color-ink);
+  color: var(--color-lime);
+  box-shadow: var(--shadow-card-sm);
 }
 
 .category-bar__count {
-  opacity: 0.8;
-  font-size: 11px;
-  font-weight: 400;
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  padding: 0 5px;
+  place-items: center;
+  font-size: 10px;
+}
+
+.category-bar__pill.active .category-bar__count {
+  background: var(--color-accent);
+  color: var(--color-white);
 }
 </style>
