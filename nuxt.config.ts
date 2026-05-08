@@ -179,6 +179,12 @@ export default defineNuxtConfig({
       apiBase: API_SERVER_URL,
       storefrontCode: process.env.NUXT_PUBLIC_STOREFRONT_CODE || 'telegram',
       noimage: '/images/noimage.png',
+      packeta: {
+        apiKey: process.env.PACKETA_WIDGET_API_KEY || process.env.NUXT_PUBLIC_PACKETA_API_KEY || '',
+        language: process.env.NUXT_PUBLIC_PACKETA_LANGUAGE || 'en',
+        defaultCountry: process.env.NUXT_PUBLIC_PACKETA_COUNTRY || 'CZ',
+        carriers: ['packeta']
+      },
       tg: {
         fallbackRegion: 'cz',
         catalog: {

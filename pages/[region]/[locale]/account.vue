@@ -335,6 +335,7 @@ onMounted(async () => {
 
 .account-card,
 .account-section {
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-lg);
   background: var(--color-white);
   padding: 16px;
@@ -351,17 +352,18 @@ onMounted(async () => {
 .account-card__avatar {
   width: 64px;
   height: 64px;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-full);
   object-fit: cover;
 }
 
 .account-card__avatar--fallback {
   display: grid;
-  background: var(--color-bg-card);
-  color: var(--color-primary);
+  background: var(--color-lime);
+  color: var(--color-ink);
   place-items: center;
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 800;
 }
 
 .account-card h1,
@@ -404,18 +406,16 @@ onMounted(async () => {
 .account-form label {
   display: grid;
   gap: 6px;
-  color: var(--color-text);
-  font-size: 13px;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 700;
-}
-
-.account-form :deep(.tg-field) {
-  border-color: #d8d8d8;
-  background: var(--color-white);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .account-form--address {
-  border-top: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-ink);
   padding-top: 14px;
 }
 
@@ -423,10 +423,12 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
-  border: 1.5px solid #d8d8d8;
+  border: 2px solid var(--color-ink);
   border-radius: var(--radius-md);
+  background: var(--color-bg-input);
   padding: 12px;
   align-items: center;
+  box-shadow: var(--shadow-card-sm);
 }
 
 .address-card strong,
@@ -436,7 +438,10 @@ onMounted(async () => {
 }
 
 .address-card strong {
+  font-family: var(--font-display);
   font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .address-card span,
@@ -464,8 +469,13 @@ onMounted(async () => {
   background: transparent;
   color: var(--color-primary-dark);
   padding: 0;
-  font-size: 12px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .account-link--danger {
