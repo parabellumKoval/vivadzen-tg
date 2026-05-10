@@ -265,6 +265,8 @@ onMounted(() => {
       </div>
     </section>
 
+    <TgGoogleReviewsSlider />
+
     <section class="tg-page home-perks">
       <h2 class="home-perks__title">{{ t('home_perks_title') }}</h2>
       <div class="home-perks__grid">

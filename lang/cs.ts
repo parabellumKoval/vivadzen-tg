@@ -145,5 +145,10 @@ export default {
   free_delivery_left: 'Do dopravy zdarma chybí {amount}',
   free_delivery_from: 'Zdarma od {amount}',
   supheader_express: 'Rychlá expresní doprava',
-  supheader_free_from: 'Doprava zdarma od {amount}'
+  supheader_free_from: 'Doprava zdarma od {amount}',
+  anonymous: 'Anonymní',
+  reviews_title: 'Recenze beze srandy',
+  reviews_subtitle: '{count} ověřených recenzí na Google · průměr {rating}',
+  reviews_subtitle_empty: 'Skutečné recenze z Googlu od skutečných lidí',
+  reviews_empty: 'Zatím žádné recenze'
 } satisfies TgLocaleMessages
