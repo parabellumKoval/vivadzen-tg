@@ -475,7 +475,6 @@ onMounted(() => {
 .vibe-tile__label {
   position: relative;
   z-index: 1;
-  max-width: calc(100% - 32px);
   font-family: var(--font-display);
   font-size: clamp(20px, 6vw, 28px);
   letter-spacing: 0;
