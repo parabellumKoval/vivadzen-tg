@@ -64,7 +64,6 @@ const selectCategory = (slug: string | null) => {
   <TgLayout :title="title" :show-lang="true">
     <TgCategoryBar
       :categories="categories"
-      :active-category="categorySlug"
       @select="selectCategory"
     />
 

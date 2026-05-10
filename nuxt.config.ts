@@ -34,6 +34,7 @@ loadEnvFile(path.resolve(__dirname, '../../.env'))
 loadEnvFile(path.resolve(__dirname, '.env'), true)
 
 const HOST = process.env.HOST_IP || 'localhost'
+const FONT_STYLESHEET_URL = 'https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap'
 const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 const IS_VERCEL = Boolean(process.env.VERCEL)
 const IS_DEPLOYMENT_BUILD = IS_PRODUCTION && (IS_VERCEL || Boolean(process.env.CI))
@@ -160,7 +161,8 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: FONT_STYLESHEET_URL }
       ]
     }
   },

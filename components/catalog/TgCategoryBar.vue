@@ -4,7 +4,6 @@ import { normalizeCategorySlug } from '~/composables/useTgCatalog'
 
 const props = defineProps<{
   categories: TgCategory[]
-  activeCategory?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -13,8 +12,6 @@ const emit = defineEmits<{
 
 const { t } = useTgI18n()
 const { categoryPath } = useTgRouting()
-
-const activeSlug = computed(() => normalizeCategorySlug(props.activeCategory))
 
 const countOf = (category: TgCategory) => {
   return category.count ?? category.products_count ?? category.productsCount ?? category.meta?.products_count ?? null
@@ -30,8 +27,6 @@ const select = (slug: string | null) => {
     <NuxtLink
       :to="categoryPath()"
       class="category-bar__pill"
-      exact-active-class="active"
-      :class="{ active: !activeSlug }"
       :prefetch="false"
       @click="select(null)"
     >
@@ -43,9 +38,6 @@ const select = (slug: string | null) => {
       :key="category.slug || category.id"
       :to="categoryPath(category.slug)"
       class="category-bar__pill"
-      active-class="active"
-      exact-active-class="active"
-      :class="{ active: normalizeCategorySlug(category.slug) === activeSlug }"
       :prefetch="false"
       @click="select(category.slug)"
     >
@@ -89,8 +81,6 @@ const select = (slug: string | null) => {
   text-transform: uppercase;
 }
 
-.category-bar__pill.active,
-.category-bar__pill.router-link-active,
 .category-bar__pill.router-link-exact-active {
   background: var(--color-ink);
   color: var(--color-lime);
@@ -109,8 +99,6 @@ const select = (slug: string | null) => {
   font-size: 10px;
 }
 
-.category-bar__pill.active .category-bar__count,
-.category-bar__pill.router-link-active .category-bar__count,
 .category-bar__pill.router-link-exact-active .category-bar__count {
   background: var(--color-accent);
   color: var(--color-white);

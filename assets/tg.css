@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 :root {
   /* Colors — urban / street-shop palette */
   --color-bg: #fff5e1;
@@ -24,7 +22,8 @@
   --color-danger: #e02d2d;
 
   /* Type */
-  --font-display: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-display: 'Archivo Black', Impact, 'Arial Black', var(--font-body);
+  --font-display-weight: 900;
   --font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Geometry */
@@ -99,9 +98,70 @@ h1, h2, h3, h4 {
 
 .tg-display {
   font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
   letter-spacing: -0.02em;
   line-height: 0.95;
   text-transform: uppercase;
+}
+
+/* Keep display typography heavy when Archivo Black is unavailable in mobile webviews. */
+:where(
+  .tg-title,
+  .tg-btn,
+  .tg-empty__title,
+  .tg-pill,
+  .about-hero__pill,
+  .about-hero__title,
+  .about-stats__cell strong,
+  .value-card strong,
+  .order-card__more,
+  .product-page__price strong,
+  .product-page__save,
+  .product-page__read,
+  .checkout-card__summary,
+  .checkout-step__number,
+  .checkout-step__header strong,
+  .checkout-step__badge,
+  .checkout-link,
+  .checkout-item strong,
+  .radio-card__title strong,
+  .radio-card em,
+  .saved-addresses > strong,
+  .saved-address span,
+  .packeta-picker__point strong,
+  .checkout-total__final span,
+  .checkout-total__final strong,
+  .account-card__avatar--fallback,
+  .address-card strong,
+  .account-link,
+  .settings-list__row,
+  .settings-list__row strong,
+  .tg-free__head,
+  .qty-counter__value,
+  .cart-sheet__summary,
+  .cart-sheet__summary strong,
+  .tg-prod-delivery__head,
+  .variant-picker__label,
+  .product-card__badge,
+  .product-card__price,
+  .product-card__btn,
+  .category-bar__pill,
+  .tg-bottom-nav__item,
+  .tg-bottom-nav__badge,
+  .tg-topbar__title,
+  .hero-card__pill,
+  .hero-card__title,
+  .hero-card__strip,
+  .vibe-tile__tag,
+  .vibe-tile__label,
+  .home-section__title,
+  .home-section__more,
+  .home-perks__title,
+  .perk-card__copy strong,
+  .lang-btn,
+  .sheet__title
+) {
+  font-weight: var(--font-display-weight);
 }
 
 .tg-mono {
