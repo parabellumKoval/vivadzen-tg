@@ -469,7 +469,17 @@ const submit = async () => {
           </button>
           <div v-if="expandedCart" class="checkout-card__items">
             <div v-for="item in cart.items" :key="`${item.productId}-${item.variantId}`" class="checkout-item">
-              <img :src="item.image" :alt="item.name">
+              <NuxtImg
+                :src="item.image"
+                :alt="item.name"
+                width="84"
+                height="84"
+                densities="1x 2x"
+                format="webp"
+                quality="70"
+                loading="lazy"
+                decoding="async"
+              />
               <span>{{ item.name }} × {{ item.quantity }}</span>
               <strong>{{ formatMoney(item.price * item.quantity, item.currency) }}</strong>
             </div>

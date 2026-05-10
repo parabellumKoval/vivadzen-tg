@@ -38,7 +38,7 @@ withDefaults(defineProps<{
 
 .tg-main {
   min-height: var(--tg-viewport-height, 100dvh);
-  padding-top: 88px;
+  padding-top: var(--tg-chrome-height);
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 </style>

@@ -51,12 +51,14 @@ const select = (slug: string | null) => {
 .category-bar {
   position: sticky;
   z-index: 50;
-  top: 60px;
+  top: var(--tg-chrome-height);
   display: flex;
+  height: var(--tg-category-bar-height);
   gap: 8px;
   overflow-x: auto;
   background: var(--color-bg);
-  padding: 12px 16px;
+  padding: 7px 16px;
+  align-items: center;
   scrollbar-width: none;
 }
 

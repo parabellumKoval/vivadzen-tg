@@ -48,6 +48,13 @@ const SERVER_URL = process.env.SERVER_URL
   || process.env.BACKEND_URL
   || (IS_PRODUCTION || IS_VERCEL ? '' : `http://${HOST}:8000`)
 const normalizePublicUrl = (value: string) => value.trim().replace(/\/+$/, '')
+const hostnameFromUrl = (value: string) => {
+  try {
+    return value ? new URL(value).hostname : ''
+  } catch {
+    return ''
+  }
+}
 const isLoopbackUrl = (value: string) => /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?)(?::\d+)?(?:\/|$)/i.test(value.trim())
 const API_SERVER_URL = normalizePublicUrl(
   process.env.NUXT_PUBLIC_API_BASE
@@ -58,6 +65,12 @@ const API_SERVER_URL = normalizePublicUrl(
 if (IS_DEPLOYMENT_BUILD && isLoopbackUrl(API_SERVER_URL)) {
   throw new Error('TG app production build cannot use a localhost API. Set NUXT_PUBLIC_API_BASE to a public HTTPS backend URL.')
 }
+const IMAGE_DOMAINS = Array.from(new Set([
+  hostnameFromUrl(API_SERVER_URL),
+  hostnameFromUrl(SERVER_URL),
+  hostnameFromUrl(HOST_URL),
+  hostnameFromUrl(process.env.NUXT_PUBLIC_IMAGE_CDN || '')
+].filter(Boolean)))
 const FRONT_DIR = path.resolve(__dirname, '../front')
 
 const REGIONS = {
@@ -129,7 +142,8 @@ export default defineNuxtConfig({
       {
         autoImports: ['defineStore']
       }
-    ]
+    ],
+    '@nuxt/image'
   ],
 
   css: ['~/assets/tg.css'],
@@ -165,6 +179,13 @@ export default defineNuxtConfig({
         { rel: 'stylesheet', href: FONT_STYLESHEET_URL }
       ]
     }
+  },
+
+  image: {
+    provider: 'ipx',
+    domains: IMAGE_DOMAINS,
+    quality: 82,
+    format: ['webp']
   },
 
   routeRules: {

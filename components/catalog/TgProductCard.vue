@@ -42,7 +42,19 @@ const addToCart = () => {
   <article class="product-card">
     <NuxtLink :to="productPath(product.slug)" class="product-card__image-wrap" :prefetch="false">
       <span v-if="hasSale(product)" class="product-card__badge">{{ t('sale') }}</span>
-      <img :src="imageOf(product)" :alt="product.name" class="product-card__image">
+      <NuxtImg
+        :src="imageOf(product)"
+        :alt="product.name"
+        class="product-card__image"
+        width="320"
+        height="320"
+        sizes="160px sm:180px md:220px"
+        densities="1x 2x"
+        format="webp"
+        quality="78"
+        loading="lazy"
+        decoding="async"
+      />
     </NuxtLink>
 
     <div class="product-card__body">

@@ -31,7 +31,18 @@ const checkout = async () => {
     <div v-if="cart.items.length" class="cart-sheet">
       <div class="cart-sheet__items">
         <article v-for="item in cart.items" :key="`${item.productId}-${item.variantId}`" class="cart-item">
-          <img :src="item.image" :alt="item.name" class="cart-item__image">
+          <NuxtImg
+            :src="item.image"
+            :alt="item.name"
+            class="cart-item__image"
+            width="128"
+            height="128"
+            densities="1x 2x"
+            format="webp"
+            quality="72"
+            loading="lazy"
+            decoding="async"
+          />
           <div class="cart-item__body">
             <div class="cart-item__name">{{ item.name }}</div>
             <div v-if="item.variantLabel" class="cart-item__variant">{{ item.variantLabel }}</div>

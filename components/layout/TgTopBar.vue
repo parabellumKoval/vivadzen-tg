@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
 .tg-topbar {
   position: fixed;
   z-index: 100;
-  top: 28px;
+  top: var(--tg-supheader-height);
   right: 0;
   left: 0;
   display: grid;
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
   align-items: center;
   width: 100%;
   max-width: 480px;
-  height: 60px;
+  height: var(--tg-topbar-height);
   margin: 0 auto;
   border-bottom: 2px solid var(--color-ink);
   background: var(--color-bg);

@@ -82,13 +82,22 @@ const addToCart = () => {
     <article v-else-if="product" class="product-page">
       <div class="product-page__gallery">
         <div class="product-page__slides">
-          <img
-            v-for="src in imagesOf(product)"
+          <NuxtImg
+            v-for="(src, index) in imagesOf(product)"
             :key="src"
             :src="src"
             :alt="product.name"
             class="product-page__image"
-          >
+            width="640"
+            height="640"
+            sizes="100vw sm:480px"
+            densities="1x 2x"
+            format="webp"
+            quality="82"
+            :loading="index === 0 ? 'eager' : 'lazy'"
+            :fetchpriority="index === 0 ? 'high' : 'auto'"
+            decoding="async"
+          />
         </div>
       </div>
 

@@ -39,6 +39,10 @@
   --shadow-soft: 0 8px 24px rgba(13, 13, 13, 0.08);
   --shadow-modal: 0 -8px 32px rgba(13, 13, 13, 0.18);
 
+  --tg-supheader-height: 28px;
+  --tg-topbar-height: 50px;
+  --tg-category-bar-height: 50px;
+  --tg-chrome-height: calc(var(--tg-supheader-height) + var(--tg-topbar-height));
   --tg-viewport-height: 100dvh;
 }
 

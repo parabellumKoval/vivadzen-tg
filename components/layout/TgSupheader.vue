@@ -81,7 +81,7 @@ onBeforeUnmount(stop)
   display: flex;
   width: 100%;
   max-width: 480px;
-  height: 28px;
+  height: var(--tg-supheader-height);
   margin: 0 auto;
   background: #0d0d0d;
   color: #fff;

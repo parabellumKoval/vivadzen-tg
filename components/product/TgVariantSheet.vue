@@ -50,7 +50,18 @@ const addSelected = () => {
   >
     <div v-if="product" class="variant-sheet">
       <div class="variant-sheet__product">
-        <img :src="imageOf(product)" :alt="product.name" class="variant-sheet__image">
+        <NuxtImg
+          :src="imageOf(product)"
+          :alt="product.name"
+          class="variant-sheet__image"
+          width="144"
+          height="144"
+          densities="1x 2x"
+          format="webp"
+          quality="76"
+          loading="lazy"
+          decoding="async"
+        />
         <div>
           <div class="variant-sheet__name">{{ product.name }}</div>
           <div class="variant-sheet__price">
