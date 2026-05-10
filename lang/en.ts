@@ -145,5 +145,10 @@ export default {
   free_delivery_left: 'Add {amount} for free delivery',
   free_delivery_from: 'Free from {amount}',
   supheader_express: 'Fast express delivery',
-  supheader_free_from: 'Free delivery from {amount}'
+  supheader_free_from: 'Free delivery from {amount}',
+  anonymous: 'Anonymous',
+  reviews_title: 'Real talk',
+  reviews_subtitle: '{count} verified Google reviews · {rating} avg',
+  reviews_subtitle_empty: 'Real Google reviews from real buyers',
+  reviews_empty: 'No reviews yet'
 } satisfies TgLocaleMessages

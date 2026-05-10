@@ -145,5 +145,10 @@ export default {
   free_delivery_left: 'До бесплатной доставки {amount}',
   free_delivery_from: 'Бесплатно от {amount}',
   supheader_express: 'Быстрая экспресс-доставка',
-  supheader_free_from: 'Бесплатная доставка от {amount}'
+  supheader_free_from: 'Бесплатная доставка от {amount}',
+  anonymous: 'Аноним',
+  reviews_title: 'Без фильтров',
+  reviews_subtitle: '{count} подтверждённых отзывов в Google · средняя {rating}',
+  reviews_subtitle_empty: 'Реальные отзывы из Google',
+  reviews_empty: 'Отзывов пока нет'
 } satisfies TgLocaleMessages
