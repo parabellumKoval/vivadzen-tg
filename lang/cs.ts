@@ -148,6 +148,7 @@ export default {
   supheader_free_from: 'Doprava zdarma od {amount}',
   anonymous: 'Anonymní',
   reviews_title: 'Recenze beze srandy',
+  reviews_leave_cta: 'Napsat recenzi na Googlu',
   reviews_subtitle: '{count} ověřených recenzí na Google · průměr {rating}',
   reviews_subtitle_empty: 'Skutečné recenze z Googlu od skutečných lidí',
   reviews_empty: 'Zatím žádné recenze'

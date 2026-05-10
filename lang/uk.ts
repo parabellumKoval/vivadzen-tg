@@ -148,6 +148,7 @@ export default {
   supheader_free_from: 'Безкоштовна доставка від {amount}',
   anonymous: 'Анонім',
   reviews_title: 'Чесні відгуки',
+  reviews_leave_cta: 'Залишити відгук у Google',
   reviews_subtitle: '{count} підтверджених відгуків у Google · середня {rating}',
   reviews_subtitle_empty: 'Справжні відгуки з Google від справжніх людей',
   reviews_empty: 'Відгуків поки немає'

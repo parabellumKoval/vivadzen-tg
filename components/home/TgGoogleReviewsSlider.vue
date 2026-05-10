@@ -4,28 +4,39 @@ import type { TgGoogleReview } from '~/composables/useTgGoogleReviews'
 const props = withDefaults(defineProps<{
   perPage?: number
   commentLimit?: number
+  reviewUrl?: string
 }>(), {
   perPage: 12,
-  commentLimit: 220
+  commentLimit: 220,
+  reviewUrl: 'https://www.google.com/maps/place//data=!4m3!3m2!1s0x470bed1ef43dd475:0xd571b66414b9e18a!12e1?source=g.page.m.nr._&laa=nmx-review-solicitation-recommendation-card'
 })
 
 const { t, locale } = useTgI18n()
-const { reviews, meta, loading, fetchReviews } = useTgGoogleReviews()
+const items = useTgGoogleReviews()
+const stats = useTgGoogleReviews()
 
 const initialLoading = ref(true)
+const reviews = items.reviews
+const loading = items.loading
 
 onMounted(async () => {
-  await fetchReviews({
-    page: 1,
-    per_page: props.perPage,
-    rating: 5,
-    has_comment: true
-  })
+  await Promise.all([
+    items.fetchReviews({
+      page: 1,
+      per_page: props.perPage,
+      rating: 5,
+      has_comment: true
+    }),
+    stats.fetchReviews({
+      page: 1,
+      per_page: 1
+    })
+  ])
   initialLoading.value = false
 })
 
-const averageRating = computed(() => Number(meta.value?.avg_rating || 0))
-const totalReviews = computed(() => Number(meta.value?.total || 0))
+const averageRating = computed(() => Number(stats.meta.value?.avg_rating || 0))
+const totalReviews = computed(() => Number(stats.meta.value?.total || 0))
 const ratingLabel = computed(() => averageRating.value ? averageRating.value.toFixed(1) : '5.0')
 
 const formatDate = (dateString: string) => {
@@ -144,6 +155,23 @@ const cardBg = (index: number) => {
     <div v-else class="home-reviews__empty">
       {{ t('reviews_empty') }}
     </div>
+
+    <a
+      v-if="reviewUrl"
+      :href="reviewUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="tg-btn tg-btn--ink home-reviews__cta"
+    >
+      <svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C41.8 35.8 44 30.3 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+      </svg>
+      {{ t('reviews_leave_cta') }}
+      <TgIcon name="arrow-right" :size="14" :stroke="2.4" />
+    </a>
   </section>
 </template>
 
@@ -361,5 +389,19 @@ const cardBg = (index: number) => {
   text-transform: uppercase;
   color: var(--color-ink);
   box-shadow: var(--shadow-card-sm);
+}
+
+.home-reviews__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-right: 16px;
+  margin-top: 4px;
+  width: auto;
+}
+
+.home-reviews__cta svg {
+  flex-shrink: 0;
 }
 </style>

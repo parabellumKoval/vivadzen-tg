@@ -147,7 +147,8 @@ export default {
   supheader_express: 'Быстрая экспресс-доставка',
   supheader_free_from: 'Бесплатная доставка от {amount}',
   anonymous: 'Аноним',
-  reviews_title: 'Без фильтров',
+  reviews_title: 'Отзывы работяг',
+  reviews_leave_cta: 'Оставить отзыв в Google',
   reviews_subtitle: '{count} подтверждённых отзывов в Google · средняя {rating}',
   reviews_subtitle_empty: 'Реальные отзывы из Google',
   reviews_empty: 'Отзывов пока нет'
