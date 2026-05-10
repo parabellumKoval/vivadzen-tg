@@ -331,7 +331,7 @@ const addToCart = () => {
 
 .product-page__sticky {
   position: sticky;
-  bottom: calc(64px + env(safe-area-inset-bottom));
+  bottom: calc(76px + env(safe-area-inset-bottom));
   display: flex;
   margin: 0 16px 12px;
   justify-content: center;

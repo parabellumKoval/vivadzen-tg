@@ -300,17 +300,25 @@ const cardBg = (index: number) => {
 .review-card__rating {
   display: inline-flex;
   gap: 2px;
-  color: var(--color-ink);
-  opacity: 0.25;
 }
 
 .review-card__star {
   flex-shrink: 0;
+  color: var(--color-ink);
+  opacity: 0.25;
+}
+
+.review-card__star :deep(path) {
+  fill: none;
 }
 
 .review-card__star--filled {
   color: var(--color-ink);
   opacity: 1;
+}
+
+.review-card__star--filled :deep(path) {
+  fill: var(--color-ink);
 }
 
 .review-card__comment {
