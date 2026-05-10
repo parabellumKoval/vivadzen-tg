@@ -102,8 +102,6 @@ const selectCategory = (slug: string | null) => {
         {{ t('load_more') }}
       </button>
     </section>
-
-    <TgGoogleReviewsSlider class="catalog-page__reviews" />
   </TgLayout>
 </template>
 
@@ -120,9 +118,5 @@ const selectCategory = (slug: string | null) => {
 
 .catalog-page__more {
   margin-top: 4px;
-}
-
-.catalog-page__reviews {
-  margin-top: 8px;
 }
 </style>

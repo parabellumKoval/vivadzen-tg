@@ -157,6 +157,8 @@ const addToCart = () => {
         </div>
       </div>
 
+      <TgGoogleReviewsSlider class="product-page__reviews" />
+
       <div class="product-page__sticky">
         <TgQtyCounter
           v-if="productQty"
@@ -320,6 +322,11 @@ const addToCart = () => {
   font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.product-page__reviews {
+  margin-top: 8px;
+  padding-bottom: 16px;
 }
 
 .product-page__sticky {
