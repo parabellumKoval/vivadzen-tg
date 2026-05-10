@@ -82,6 +82,7 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
   const config = useRuntimeConfig()
   const { t } = useTgI18n()
   const ui = useTgUiStore()
+  const { sortByStock } = useTgProductUtils()
   const tgCatalogConfig = (config.public.tg as any)?.catalog || {}
   const baseCategoryId = normalizeCategoryId(tgCatalogConfig.baseCategoryId)
   const baseCategorySlug = normalizeCategorySlug(tgCatalogConfig.baseCategorySlug)
@@ -191,7 +192,7 @@ export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<stri
         }
       })
       const normalized = normalizeCatalog(response)
-      products.value = reset ? normalized.products : [...products.value, ...normalized.products]
+      products.value = sortByStock(reset ? normalized.products : [...products.value, ...normalized.products])
       meta.value = normalized.meta
     } catch (err) {
       error.value = err

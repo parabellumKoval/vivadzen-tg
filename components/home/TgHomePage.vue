@@ -29,6 +29,7 @@ const config = useRuntimeConfig()
 const { t } = useTgI18n()
 const ui = useTgUiStore()
 const { categoryPath, catalogPath } = useTgRouting()
+const { isInStock } = useTgProductUtils()
 
 const tgConfig = (config.public.tg as any) || {}
 const tgCatalogConfig = tgConfig.catalog || {}
@@ -112,9 +113,9 @@ const loadCategoryProducts = async (category: TgCategory) => {
     })
 
     const normalized = normalizeCatalog(response)
-    products.push(...normalized.products)
+    products.push(...normalized.products.filter((product) => isInStock(product)))
 
-    total = Number(normalized.meta?.total || products.length || 0)
+    total = products.length
     const currentPage = Number(normalized.meta?.current_page || page)
     lastPage = Number(normalized.meta?.last_page || currentPage || 1)
 

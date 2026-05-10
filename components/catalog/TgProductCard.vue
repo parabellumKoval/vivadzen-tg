@@ -13,10 +13,12 @@ const { productPath } = useTgRouting()
 const {
   imageOf,
   variantsOf,
+  productNameOf,
   priceOf,
   oldPriceOf,
   currencyOf,
   hasSale,
+  isInStock,
   formatMoney
 } = useTgProductUtils()
 
@@ -25,9 +27,14 @@ const variantSheetOpen = ref(false)
 const productId = computed(() => props.product.id || '')
 const variants = computed(() => variantsOf(props.product))
 const hasVariants = computed(() => variants.value.length > 0)
+const productName = computed(() => productNameOf(props.product))
+const productAvailable = computed(() => isInStock(props.product))
+const productHasSale = computed(() => hasSale(props.product))
 const qty = computed(() => cart.getQty(productId.value))
 
 const addToCart = () => {
+  if (!productAvailable.value) return
+
   if (hasVariants.value) {
     variantSheetOpen.value = true
     return
@@ -39,12 +46,13 @@ const addToCart = () => {
 </script>
 
 <template>
-  <article class="product-card">
+  <article class="product-card" :class="{ 'product-card--unavailable': !productAvailable }">
     <NuxtLink :to="productPath(product.slug)" class="product-card__image-wrap" :prefetch="false">
-      <span v-if="hasSale(product)" class="product-card__badge">{{ t('sale') }}</span>
+      <span v-if="productHasSale" class="product-card__badge">{{ t('sale') }}</span>
+      <span v-if="!productAvailable" class="product-card__stock">{{ t('out_of_stock') }}</span>
       <NuxtImg
         :src="imageOf(product)"
-        :alt="product.name"
+        :alt="productName"
         class="product-card__image"
         width="320"
         height="320"
@@ -59,28 +67,34 @@ const addToCart = () => {
 
     <div class="product-card__body">
       <NuxtLink :to="productPath(product.slug)" class="product-card__name" :prefetch="false">
-        {{ product.name }}
+        {{ productName }}
       </NuxtLink>
 
       <div class="product-card__price-row">
         <span v-if="oldPriceOf(product)" class="product-card__price-old">
           {{ formatMoney(oldPriceOf(product), currencyOf(product)) }}
         </span>
-        <span class="product-card__price">
+        <span class="product-card__price" :class="{ 'product-card__price--sale': productHasSale }">
           {{ formatMoney(priceOf(product), currencyOf(product)) }}
         </span>
       </div>
 
       <TgQtyCounter
-        v-if="!hasVariants && qty"
+        v-if="productAvailable && !hasVariants && qty"
         class="product-card__counter"
         :model-value="qty"
         @update:model-value="cart.updateQty(productId, null, $event)"
       />
 
-      <button v-else type="button" class="product-card__btn" @click="addToCart">
+      <button
+        v-else
+        type="button"
+        class="product-card__btn"
+        :disabled="!productAvailable"
+        @click="addToCart"
+      >
         <TgIcon name="plus" :size="14" :stroke="2.6" />
-        {{ t('add') }}
+        {{ productAvailable ? t('add') : t('out_of_stock') }}
       </button>
     </div>
 
@@ -103,6 +117,15 @@ const addToCart = () => {
 .product-card:hover {
   transform: translate(-1px, -1px);
   box-shadow: var(--shadow-card);
+}
+
+.product-card--unavailable {
+  opacity: 0.48;
+}
+
+.product-card--unavailable:hover {
+  transform: none;
+  box-shadow: var(--shadow-card-sm);
 }
 
 .product-card__image-wrap {
@@ -134,6 +157,21 @@ const addToCart = () => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   transform: rotate(-6deg);
+}
+
+.product-card__stock {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-white);
+  color: var(--color-ink);
+  padding: 3px 9px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .product-card__body {
@@ -176,6 +214,10 @@ const addToCart = () => {
   letter-spacing: -0.01em;
 }
 
+.product-card__price--sale {
+  color: var(--color-accent);
+}
+
 .product-card__btn {
   display: inline-flex;
   width: 100%;
@@ -197,6 +239,12 @@ const addToCart = () => {
 .product-card__btn:hover {
   background: var(--color-primary);
   color: var(--color-white);
+}
+
+.product-card__btn:disabled {
+  cursor: not-allowed;
+  background: var(--color-white);
+  color: var(--color-text-muted);
 }
 
 .product-card__counter {

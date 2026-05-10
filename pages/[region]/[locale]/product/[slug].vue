@@ -12,6 +12,7 @@ const { catalogPath } = useTgRouting()
 const {
   imagesOf,
   variantsOf,
+  productNameOf,
   priceOf,
   oldPriceOf,
   currencyOf,
@@ -51,6 +52,7 @@ watch(error, async (value) => {
 
 const variants = computed(() => variantsOf(product.value))
 const activePriceSource = computed(() => selectedVariant.value || product.value)
+const productName = computed(() => productNameOf(product.value))
 const productQty = computed(() => {
   if (!product.value?.id) return 0
   return cart.getQty(product.value.id, selectedVariant.value?.id || null)
@@ -63,7 +65,7 @@ const shouldCollapse = computed(() => descriptionText.value.length > 140)
 const productInStock = computed(() => isInStock(activePriceSource.value))
 
 const addToCart = () => {
-  if (!product.value) return
+  if (!product.value || !productInStock.value) return
   cart.addItem(product.value, selectedVariant.value)
   haptic('light')
 }
@@ -86,7 +88,7 @@ const addToCart = () => {
             v-for="(src, index) in imagesOf(product)"
             :key="src"
             :src="src"
-            :alt="product.name"
+            :alt="productName"
             class="product-page__image"
             width="640"
             height="640"
@@ -110,11 +112,13 @@ const addToCart = () => {
           </span>
         </div>
 
-        <h1 class="product-page__title">{{ product.name }}</h1>
+        <h1 class="product-page__title">{{ productName }}</h1>
 
         <div class="product-page__price-card">
           <div class="product-page__price">
-            <strong>{{ formatMoney(priceOf(activePriceSource), currencyOf(activePriceSource)) }}</strong>
+            <strong :class="{ 'product-page__price-sale': hasSale(activePriceSource) }">
+              {{ formatMoney(priceOf(activePriceSource), currencyOf(activePriceSource)) }}
+            </strong>
             <span v-if="oldPriceOf(activePriceSource) > priceOf(activePriceSource)" class="product-page__old">
               {{ formatMoney(oldPriceOf(activePriceSource), currencyOf(activePriceSource)) }}
             </span>
@@ -163,10 +167,10 @@ const addToCart = () => {
           v-else
           type="button"
           class="tg-btn tg-btn--accent"
-          :disabled="variants.length > 0 && !selectedVariant"
+          :disabled="!productInStock || (variants.length > 0 && !selectedVariant)"
           @click="addToCart"
         >
-          {{ t('add_to_cart') }}
+          {{ productInStock ? t('add_to_cart') : t('out_of_stock') }}
         </button>
       </div>
     </article>
@@ -197,8 +201,9 @@ const addToCart = () => {
 }
 
 .product-page__image {
+  display: block;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: min(72vw, 340px);
   object-fit: contain;
   padding: 16px;
   scroll-snap-align: start;
@@ -253,6 +258,10 @@ const addToCart = () => {
   font-size: 28px;
   letter-spacing: -0.02em;
   color: var(--color-ink);
+}
+
+.product-page__price-sale {
+  color: var(--color-accent) !important;
 }
 
 .product-page__old {
