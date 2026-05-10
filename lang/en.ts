@@ -148,6 +148,7 @@ export default {
   supheader_free_from: 'Free delivery from {amount}',
   anonymous: 'Anonymous',
   reviews_title: 'Real talk',
+  reviews_leave_cta: 'Leave a review on Google',
   reviews_subtitle: '{count} verified Google reviews · {rating} avg',
   reviews_subtitle_empty: 'Real Google reviews from real buyers',
   reviews_empty: 'No reviews yet'
