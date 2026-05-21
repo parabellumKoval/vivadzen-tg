@@ -36,6 +36,11 @@ const previewPayments = computed(() => allPayments.value.slice(0, 3))
       <span>{{ t('product_delivery_title') }}</span>
     </header>
 
+    <div class="tg-prod-delivery__hint">
+      <TgIcon name="lightning" :size="14" :stroke="2.4" />
+      <span>{{ t('home_delivery_prague') }} · {{ t('home_delivery_czech') }}</span>
+    </div>
+
     <div v-if="freeActive" class="tg-prod-delivery__free">
       <TgIcon name="sparkles" :size="14" :stroke="2.2" />
       <span>{{ t('free_delivery_from', { amount: formatMoney(freeMinPrice, freeCurrency) }) }}</span>
@@ -88,6 +93,16 @@ const previewPayments = computed(() => allPayments.value.slice(0, 3))
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.tg-prod-delivery__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .tg-prod-delivery__free {

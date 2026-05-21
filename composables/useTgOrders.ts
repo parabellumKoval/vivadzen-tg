@@ -18,7 +18,7 @@ export const useTgOrders = () => {
   const orders = ref<TgOrder[]>([])
   const loading = ref(false)
 
-  const loadOrders = async () => {
+  const loadOrders = async ({ silent = false }: { silent?: boolean } = {}) => {
     loading.value = true
     try {
       const response = isTelegram.value
@@ -30,7 +30,9 @@ export const useTgOrders = () => {
       orders.value = normalizeOrders(response)
     } catch {
       orders.value = []
-      ui.showToast(t('loading_error'), 'error')
+      if (!silent) {
+        ui.showToast(t('loading_error'), 'error')
+      }
     } finally {
       loading.value = false
     }

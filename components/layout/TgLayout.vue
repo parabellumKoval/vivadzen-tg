@@ -4,11 +4,13 @@ withDefaults(defineProps<{
   showBack?: boolean
   showLang?: boolean
   transparent?: boolean
+  logo?: boolean
 }>(), {
   title: '',
   showBack: false,
   showLang: false,
-  transparent: false
+  transparent: false,
+  logo: false
 })
 </script>
 
@@ -20,6 +22,7 @@ withDefaults(defineProps<{
       :show-back="showBack"
       :show-lang="showLang"
       :transparent="transparent"
+      :logo="logo"
     />
     <main class="tg-main">
       <slot />

@@ -72,7 +72,7 @@ const addToCart = () => {
 </script>
 
 <template>
-  <TgLayout :title="t('product')" :show-back="true" :show-lang="true" transparent>
+  <TgLayout :logo="true" :show-back="true" :show-lang="true" transparent>
     <div v-if="pending && !product" class="product-page product-page--pending">
       <div class="skeleton product-page__image" />
       <div class="tg-page">
@@ -109,6 +109,14 @@ const addToCart = () => {
           <span class="tg-pill" :class="productInStock ? 'tg-pill--lime' : 'tg-pill--ink'">
             <TgIcon :name="productInStock ? 'check' : 'close'" :size="12" :stroke="3" />
             {{ productInStock ? t('in_stock') : t('out_of_stock') }}
+          </span>
+          <span class="tg-pill product-page__trust">
+            <TgIcon name="sparkles" :size="12" :stroke="2.6" />
+            {{ t('trust_fresh') }}
+          </span>
+          <span class="tg-pill product-page__trust">
+            <TgIcon name="shield" :size="12" :stroke="2.6" />
+            {{ t('trust_secure_pay') }}
           </span>
         </div>
 
@@ -172,6 +180,7 @@ const addToCart = () => {
           :disabled="!productInStock || (variants.length > 0 && !selectedVariant)"
           @click="addToCart"
         >
+          <TgIcon name="bag" :size="20" :stroke="2.2" />
           {{ productInStock ? t('add_to_cart') : t('out_of_stock') }}
         </button>
       </div>
@@ -224,6 +233,11 @@ const addToCart = () => {
 
 .product-page__badges .tg-pill {
   gap: 4px;
+}
+
+.product-page__trust {
+  background: var(--color-bg-card);
+  color: var(--color-ink);
 }
 
 .product-page__title {

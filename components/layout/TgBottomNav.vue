@@ -172,7 +172,7 @@ const items = computed(() => [
 
 .tg-bottom-nav__badge {
   position: absolute;
-  top: -28px;
+  top: -17px;
   right: calc(50% - 28px);
   min-width: 22px;
   height: 22px;

@@ -58,6 +58,8 @@ export const useTgRouting = () => {
     return slug ? pathFor(`product/${slug}`) : pathFor()
   }
 
+  const salePath = () => pathFor('sale')
+
   const switchLocale = async (nextLocale: string) => {
     const allowed = getLocalesForRegion(region.value)
     if (!allowed.includes(nextLocale)) return
@@ -88,6 +90,7 @@ export const useTgRouting = () => {
     catalogPath,
     categoryPath,
     productPath,
+    salePath,
     switchLocale
   }
 }

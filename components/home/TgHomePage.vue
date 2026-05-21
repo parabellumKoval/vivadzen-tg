@@ -28,7 +28,7 @@ const { $api } = useNuxtApp()
 const config = useRuntimeConfig()
 const { t } = useTgI18n()
 const ui = useTgUiStore()
-const { categoryPath, catalogPath } = useTgRouting()
+const { categoryPath, catalogPath, salePath } = useTgRouting()
 const { isInStock } = useTgProductUtils()
 
 const tgConfig = (config.public.tg as any) || {}
@@ -171,7 +171,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <TgLayout title="Vivadzen" :show-lang="true">
+  <TgLayout :logo="true" :show-lang="true">
     <section class="tg-page home-hero">
       <div class="hero-card">
         <span class="hero-card__pill">
@@ -181,15 +181,21 @@ onMounted(() => {
         <h1 class="hero-card__title">{{ t('home_hero_title_1') }}<br>{{ t('home_hero_title_2') }}</h1>
         <p class="hero-card__sub">{{ t('home_hero_sub') }}</p>
         <div class="hero-card__actions">
-          <NuxtLink :to="catalogPath()" class="tg-btn tg-btn--ink">
-            <TgIcon name="rocket" :size="16" :stroke="2.2" />
+          <NuxtLink :to="catalogPath()" class="tg-btn tg-btn--ink hero-card__btn-catalog">
+            <TgIcon name="grid" :size="16" :stroke="2.2" />
             {{ t('home_catalog_cta') }}
           </NuxtLink>
-          <NuxtLink :to="catalogPath()" class="tg-btn tg-btn--lime">
+          <NuxtLink :to="salePath()" class="tg-btn tg-btn--lime">
             <TgIcon name="flame" :size="16" :stroke="2.2" />
             {{ t('home_trending_cta') }}
           </NuxtLink>
         </div>
+
+        <ul class="hero-card__trust" aria-hidden="false">
+          <li><TgIcon name="truck" :size="14" :stroke="2.4" /> {{ t('home_delivery_prague') }}</li>
+          <li><TgIcon name="package" :size="14" :stroke="2.4" /> {{ t('home_delivery_czech') }}</li>
+          <li><TgIcon name="shield" :size="14" :stroke="2.4" /> {{ t('home_payment_online') }} · {{ t('home_payment_cod') }}</li>
+        </ul>
 
         <div class="hero-card__strip" aria-hidden="true">
           <span v-for="(item, index) in stripItems" :key="`${item}-${index}`">★ {{ item }}</span>
@@ -368,6 +374,35 @@ onMounted(() => {
   display: grid;
   gap: 8px;
   grid-template-columns: 1fr 1fr;
+}
+
+.hero-card__btn-catalog {
+  border-color: var(--color-white);
+  box-shadow: none;
+}
+
+.hero-card__btn-catalog:hover,
+.hero-card__btn-catalog:active {
+  box-shadow: none;
+}
+
+.hero-card__trust {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-card__trust li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .hero-card__strip {

@@ -27,6 +27,21 @@ const expandedCart = ref(false)
 const activeStep = ref(1)
 const selectedSavedAddressId = ref('')
 const errors = reactive<Record<string, string>>({})
+const submitError = ref('')
+
+const userFields = ['first_name', 'last_name', 'phone', 'email']
+const deliveryFields = ['delivery', 'settlement', 'warehouse', 'street', 'house', 'zip']
+const paymentFields = ['payment']
+
+const stepOfField = (key: string): number => {
+  if (userFields.includes(key)) return 1
+  if (deliveryFields.includes(key)) return 2
+  if (paymentFields.includes(key)) return 3
+  return 4
+}
+
+const errorsForStep = (step: number) => Object.keys(errors).filter((key) => stepOfField(key) === step && errors[key])
+const stepHasErrors = (step: number) => errorsForStep(step).length > 0
 
 const paymentMethods = computed(() => paymentMethodsFor(order.delivery.method))
 
@@ -110,11 +125,22 @@ const clearErrors = () => {
   Object.keys(errors).forEach((key) => delete errors[key])
 }
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phonePattern = /^[+\d][\d\s\-()]{6,}$/
+
 const addUserErrors = () => {
   if (!order.user.first_name) errors.first_name = t('required')
   if (!order.user.last_name) errors.last_name = t('required')
-  if (!order.user.phone) errors.phone = t('required')
-  if (!order.user.email) errors.email = t('required')
+  if (!order.user.phone) {
+    errors.phone = t('required')
+  } else if (!phonePattern.test(String(order.user.phone))) {
+    errors.phone = t('error_invalid_phone')
+  }
+  if (!order.user.email) {
+    errors.email = t('required')
+  } else if (!emailPattern.test(String(order.user.email))) {
+    errors.email = t('error_invalid_email')
+  }
 }
 
 const addPaymentErrors = () => {
@@ -175,8 +201,9 @@ const showSummary = (step: number) => isStepComplete(step) && activeStep.value !
 
 const stepClass = (step: number) => ({
   'checkout-step--active': activeStep.value === step,
-  'checkout-step--complete': isStepComplete(step),
-  'checkout-step--locked': isStepLocked(step)
+  'checkout-step--complete': isStepComplete(step) && !stepHasErrors(step),
+  'checkout-step--locked': isStepLocked(step),
+  'checkout-step--error': stepHasErrors(step)
 })
 
 const stepStatusLabel = (step: number) => {
@@ -291,6 +318,28 @@ const savedAddressLine = (address: TgSavedAddress) => {
   return [address.settlement, address.warehouse || streetLine || address.zip].filter(Boolean).join(', ') || address.title
 }
 
+const resetDeliveryFields = () => {
+  order.delivery.method = null
+  order.delivery.settlement = ''
+  order.delivery.street = ''
+  order.delivery.house = ''
+  order.delivery.room = ''
+  order.delivery.zip = ''
+  order.delivery.warehouse = ''
+  syncDeliveryPrice()
+}
+
+const onSavedAddressChange = () => {
+  const id = selectedSavedAddressId.value
+  if (!id) {
+    resetDeliveryFields()
+    haptic('selection')
+    return
+  }
+  const address = userStore.addresses.find((item) => item.id === id)
+  if (address) applySavedAddress(address, false)
+}
+
 const selectedPickupLocationId = computed(() => {
   const current = String(order.delivery.warehouse || '').trim()
   if (!current) return ''
@@ -379,6 +428,10 @@ watch([isUserStepComplete, isPaymentStepComplete, isDeliveryStepComplete], () =>
   }
 })
 
+watch(activeStep, () => {
+  submitError.value = ''
+})
+
 onMounted(async () => {
   order.provider = 'data'
   order.storefront = 'telegram'
@@ -404,10 +457,19 @@ onMounted(async () => {
   settingsReady.value = true
 })
 
+const firstStepWithErrors = () => {
+  for (const step of [1, 2, 3]) {
+    if (stepHasErrors(step)) return step
+  }
+  return firstIncompleteStep()
+}
+
 const submit = async () => {
   if (!cart.items.length || loading.value) return
+  submitError.value = ''
   if (!validate()) {
-    activeStep.value = firstIncompleteStep()
+    activeStep.value = firstStepWithErrors()
+    submitError.value = t('form_has_errors')
     haptic('error')
     return
   }
@@ -442,7 +504,12 @@ const submit = async () => {
     Object.entries(apiErrors).forEach(([key, value]) => {
       errors[key] = Array.isArray(value) ? String(value[0]) : String(value)
     })
-    ui.showToast(error?.data?.message || t('order_error'), 'error')
+    const apiMessage = error?.data?.message || error?.response?._data?.message || ''
+    submitError.value = apiMessage || t('order_error')
+    if (Object.keys(apiErrors).length) {
+      activeStep.value = firstStepWithErrors()
+    }
+    ui.showToast(submitError.value, 'error')
     haptic('error')
   } finally {
     loading.value = false
@@ -462,6 +529,16 @@ const submit = async () => {
       </div>
 
       <template v-else>
+        <div v-if="submitError" class="checkout-banner" role="alert">
+          <TgIcon name="info" :size="16" :stroke="2.4" />
+          <span>{{ submitError }}</span>
+        </div>
+
+        <ul class="checkout-trust">
+          <li><TgIcon name="sparkles" :size="12" :stroke="2.6" /> {{ t('trust_fresh') }}</li>
+          <li><TgIcon name="shield" :size="12" :stroke="2.6" /> {{ t('trust_secure_pay') }}</li>
+        </ul>
+
         <section class="checkout-card">
           <button type="button" class="checkout-card__summary" @click="expandedCart = !expandedCart">
             <span>{{ cart.totalQty }} · {{ formatMoney(cart.totalPrice, cart.items[0]?.currency) }}</span>
@@ -490,14 +567,16 @@ const submit = async () => {
         <section class="checkout-step" :class="stepClass(1)">
           <button type="button" class="checkout-step__header" @click="openStep(1)">
             <span class="checkout-step__number">
-              <TgIcon v-if="isStepComplete(1) && activeStep !== 1" name="check" :size="16" :stroke="3" />
+              <TgIcon v-if="stepHasErrors(1)" name="close" :size="16" :stroke="3" />
+              <TgIcon v-else-if="isStepComplete(1) && activeStep !== 1" name="check" :size="16" :stroke="3" />
               <template v-else>1</template>
             </span>
             <span class="checkout-step__title">
               <strong>{{ t('step_user') }}</strong>
               <small>{{ stepStatusLabel(1) }}</small>
             </span>
-            <span v-if="isStepComplete(1) && activeStep !== 1" class="checkout-step__badge">{{ t('done') }}</span>
+            <span v-if="stepHasErrors(1)" class="checkout-step__badge checkout-step__badge--error">{{ errorsForStep(1).length }}</span>
+            <span v-else-if="isStepComplete(1) && activeStep !== 1" class="checkout-step__badge">{{ t('done') }}</span>
           </button>
 
           <div v-if="showSummary(1)" class="checkout-summary">
@@ -506,6 +585,7 @@ const submit = async () => {
           </div>
 
           <div v-else-if="activeStep === 1" class="checkout-step__body">
+            <p v-if="stepHasErrors(1)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
             <label>
               <span>{{ t('first_name') }}</span>
               <input v-model="order.user.first_name" class="tg-field" :class="{ 'tg-field--error': errors.first_name }">
@@ -533,14 +613,16 @@ const submit = async () => {
         <section class="checkout-step" :class="stepClass(2)">
           <button type="button" class="checkout-step__header" @click="openStep(2)">
             <span class="checkout-step__number">
-              <TgIcon v-if="isStepComplete(2) && activeStep !== 2" name="check" :size="16" :stroke="3" />
+              <TgIcon v-if="stepHasErrors(2)" name="close" :size="16" :stroke="3" />
+              <TgIcon v-else-if="isStepComplete(2) && activeStep !== 2" name="check" :size="16" :stroke="3" />
               <template v-else>2</template>
             </span>
             <span class="checkout-step__title">
               <strong>{{ t('step_delivery') }}</strong>
               <small>{{ stepStatusLabel(2) }}</small>
             </span>
-            <span v-if="isStepComplete(2) && activeStep !== 2" class="checkout-step__badge">{{ t('done') }}</span>
+            <span v-if="stepHasErrors(2)" class="checkout-step__badge checkout-step__badge--error">{{ errorsForStep(2).length }}</span>
+            <span v-else-if="isStepComplete(2) && activeStep !== 2" class="checkout-step__badge">{{ t('done') }}</span>
           </button>
 
           <div v-if="showSummary(2)" class="checkout-summary">
@@ -549,20 +631,17 @@ const submit = async () => {
           </div>
 
           <div v-else-if="activeStep === 2" class="checkout-step__body">
-            <div v-if="userStore.addresses.length" class="saved-addresses">
-              <strong>{{ t('saved_addresses') }}</strong>
-              <button
-                v-for="address in userStore.addresses"
-                :key="address.id"
-                type="button"
-                class="saved-address"
-                :class="{ 'saved-address--active': selectedSavedAddressId === address.id }"
-                @click="applySavedAddress(address)"
-              >
-                <span>{{ savedAddressLine(address) }}</span>
-                <small>{{ deliveryMethodTitle(address.deliveryMethod) }}</small>
-              </button>
-            </div>
+            <p v-if="stepHasErrors(2)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
+
+            <label v-if="userStore.addresses.length" class="address-selector">
+              <span>{{ t('use_saved_address') }}</span>
+              <select v-model="selectedSavedAddressId" class="tg-field" @change="onSavedAddressChange">
+                <option value="">{{ t('new_address') }}</option>
+                <option v-for="address in userStore.addresses" :key="address.id" :value="address.id">
+                  {{ savedAddressLine(address) }}
+                </option>
+              </select>
+            </label>
 
             <div class="radio-list">
               <label
@@ -659,14 +738,16 @@ const submit = async () => {
         <section class="checkout-step" :class="stepClass(3)">
           <button type="button" class="checkout-step__header" @click="openStep(3)">
             <span class="checkout-step__number">
-              <TgIcon v-if="isStepComplete(3) && activeStep !== 3" name="check" :size="16" :stroke="3" />
+              <TgIcon v-if="stepHasErrors(3)" name="close" :size="16" :stroke="3" />
+              <TgIcon v-else-if="isStepComplete(3) && activeStep !== 3" name="check" :size="16" :stroke="3" />
               <template v-else>3</template>
             </span>
             <span class="checkout-step__title">
               <strong>{{ t('step_payment') }}</strong>
               <small>{{ stepStatusLabel(3) }}</small>
             </span>
-            <span v-if="isStepComplete(3) && activeStep !== 3" class="checkout-step__badge">{{ t('done') }}</span>
+            <span v-if="stepHasErrors(3)" class="checkout-step__badge checkout-step__badge--error">{{ errorsForStep(3).length }}</span>
+            <span v-else-if="isStepComplete(3) && activeStep !== 3" class="checkout-step__badge">{{ t('done') }}</span>
           </button>
 
           <div v-if="showSummary(3)" class="checkout-summary">
@@ -675,6 +756,7 @@ const submit = async () => {
           </div>
 
           <div v-else-if="activeStep === 3" class="checkout-step__body">
+            <p v-if="stepHasErrors(3)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
             <div class="radio-list">
               <label
                 v-for="method in paymentMethods"
@@ -743,6 +825,74 @@ const submit = async () => {
 .checkout-page {
   display: grid;
   gap: 14px;
+}
+
+.checkout-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: rgba(220, 38, 38, 0.08);
+  padding: 10px 12px;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.checkout-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkout-step__hint {
+  margin: 0;
+  border: 1.5px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: rgba(220, 38, 38, 0.06);
+  padding: 8px 10px;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.address-selector {
+  display: grid;
+  gap: 6px;
+}
+
+.address-selector > span {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.checkout-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-card);
+  padding: 4px 9px;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .checkout-card,
@@ -865,6 +1015,24 @@ const submit = async () => {
 
 .checkout-step--locked .checkout-step__header {
   cursor: not-allowed;
+}
+
+.checkout-step--error {
+  border-color: var(--color-danger);
+  background: rgba(220, 38, 38, 0.04);
+  box-shadow: 4px 4px 0 0 var(--color-danger);
+}
+
+.checkout-step--error .checkout-step__number {
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+.checkout-step__badge--error {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-white);
+  font-family: var(--font-display);
 }
 
 .checkout-step__body,

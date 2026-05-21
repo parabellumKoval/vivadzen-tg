@@ -17,7 +17,7 @@ const orderProducts = computed<any[]>(() => {
   return Array.isArray(selectedOrder.value?.products) ? selectedOrder.value.products : []
 })
 
-await loadOrders()
+await loadOrders({ silent: true })
 
 const statusLabel = (status?: string) => status || t('status_new')
 const dateLabel = (value?: string) => {

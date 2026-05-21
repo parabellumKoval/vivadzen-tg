@@ -161,7 +161,7 @@ const cardBg = (index: number) => {
       :href="reviewUrl"
       target="_blank"
       rel="noopener noreferrer"
-      class="tg-btn tg-btn--ink home-reviews__cta"
+      class="home-reviews__cta"
     >
       <svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true">
         <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
@@ -394,11 +394,16 @@ const cardBg = (index: number) => {
 .home-reviews__cta {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  margin-top: 8px;
   margin-right: 16px;
-  margin-top: 4px;
-  width: auto;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: uppercase;
 }
 
 .home-reviews__cta svg {
