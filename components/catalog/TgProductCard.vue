@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { TgProduct } from '~/types/tg'
+import { normalizeCategorySlug } from '~/composables/useTgCatalog'
 import { useTgCartStore } from '~/stores/cart'
 
 const props = defineProps<{
   product: TgProduct
+  sourceCategorySlug?: string | null
 }>()
 
 const cart = useTgCartStore()
@@ -31,6 +33,21 @@ const productName = computed(() => productNameOf(props.product))
 const productAvailable = computed(() => isInStock(props.product))
 const productHasSale = computed(() => hasSale(props.product))
 const qty = computed(() => cart.getQty(productId.value))
+const sourceCategorySlug = computed(() => normalizeCategorySlug(props.sourceCategorySlug))
+const productLink = computed(() => {
+  const path = productPath(props.product.slug)
+
+  if (!sourceCategorySlug.value) {
+    return path
+  }
+
+  return {
+    path,
+    query: {
+      fromCategory: sourceCategorySlug.value
+    }
+  }
+})
 
 const addToCart = () => {
   if (!productAvailable.value) return
@@ -47,7 +64,7 @@ const addToCart = () => {
 
 <template>
   <article class="product-card" :class="{ 'product-card--unavailable': !productAvailable }">
-    <NuxtLink :to="productPath(product.slug)" class="product-card__image-wrap" :prefetch="false">
+    <NuxtLink :to="productLink" class="product-card__image-wrap" :prefetch="false">
       <span v-if="productHasSale" class="product-card__badge">{{ t('sale') }}</span>
       <span v-if="!productAvailable" class="product-card__stock">{{ t('out_of_stock') }}</span>
       <NuxtImg
@@ -66,7 +83,7 @@ const addToCart = () => {
     </NuxtLink>
 
     <div class="product-card__body">
-      <NuxtLink :to="productPath(product.slug)" class="product-card__name" :prefetch="false">
+      <NuxtLink :to="productLink" class="product-card__name" :prefetch="false">
         {{ productName }}
       </NuxtLink>
 

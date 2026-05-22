@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { TgProduct, TgProductVariant } from '~/types/tg'
+import {
+  normalizeCategoryId,
+  normalizeCategorySlug,
+  resolvePreferredProductCategorySlug
+} from '~/composables/useTgCatalog'
 import { useTgCartStore } from '~/stores/cart'
 import { useTgUiStore } from '~/stores/ui'
 
@@ -9,6 +14,7 @@ const ui = useTgUiStore()
 const { t } = useTgI18n()
 const { haptic } = useTelegram()
 const { catalogPath } = useTgRouting()
+const config = useRuntimeConfig()
 const {
   imagesOf,
   variantsOf,
@@ -24,6 +30,9 @@ const {
 const { $api } = useNuxtApp()
 
 const slug = computed(() => String(route.params.slug || ''))
+const tgCatalogConfig = ((config.public.tg as any) || {}).catalog || {}
+const baseCategoryId = normalizeCategoryId(tgCatalogConfig.baseCategoryId)
+const baseCategorySlug = normalizeCategorySlug(tgCatalogConfig.baseCategorySlug)
 const selectedVariant = ref<TgProductVariant | null>(null)
 const expanded = ref(false)
 
@@ -63,6 +72,19 @@ const descriptionText = computed(() => description.value.replace(/<[^>]+>/g, '')
 const shouldCollapse = computed(() => descriptionText.value.length > 140)
 
 const productInStock = computed(() => isInStock(activePriceSource.value))
+const sourceCategorySlug = computed(() => {
+  const requestedSlug = normalizeCategorySlug(route.query.fromCategory)
+  if (requestedSlug) return requestedSlug
+
+  return resolvePreferredProductCategorySlug(
+    product.value?.categories as Array<Record<string, any>> | null | undefined,
+    baseCategoryId,
+    baseCategorySlug
+  )
+})
+const backTo = computed(() => {
+  return sourceCategorySlug.value ? catalogPath(sourceCategorySlug.value) : catalogPath()
+})
 
 const addToCart = () => {
   if (!product.value || !productInStock.value) return
@@ -72,7 +94,7 @@ const addToCart = () => {
 </script>
 
 <template>
-  <TgLayout :logo="true" :show-back="true" :show-lang="true" transparent>
+  <TgLayout :logo="true" :show-back="true" :back-to="backTo" :show-lang="true" transparent>
     <div v-if="pending && !product" class="product-page product-page--pending">
       <div class="skeleton product-page__image" />
       <div class="tg-page">

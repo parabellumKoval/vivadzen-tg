@@ -2,12 +2,14 @@
 withDefaults(defineProps<{
   title?: string
   showBack?: boolean
+  backTo?: string | null
   showLang?: boolean
   transparent?: boolean
   logo?: boolean
 }>(), {
   title: '',
   showBack: false,
+  backTo: null,
   showLang: false,
   transparent: false,
   logo: false
@@ -20,6 +22,7 @@ withDefaults(defineProps<{
     <TgTopBar
       :title="title"
       :show-back="showBack"
+      :back-to="backTo"
       :show-lang="showLang"
       :transparent="transparent"
       :logo="logo"

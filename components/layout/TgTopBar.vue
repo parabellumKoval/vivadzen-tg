@@ -2,12 +2,14 @@
 const props = withDefaults(defineProps<{
   title?: string
   showBack?: boolean
+  backTo?: string | null
   showLang?: boolean
   transparent?: boolean
   logo?: boolean
 }>(), {
   title: '',
   showBack: false,
+  backTo: null,
   showLang: false,
   transparent: false,
   logo: false
@@ -19,6 +21,11 @@ const { webApp } = useTelegram()
 const { t } = useTgI18n()
 
 const goBack = () => {
+  if (props.backTo) {
+    navigateTo(props.backTo)
+    return
+  }
+
   if (process.client && window.history.length > 1) {
     router.back()
     return

@@ -257,6 +257,7 @@ onMounted(() => {
             v-for="product in section.products"
             :key="product.id || product.slug"
             :product="product"
+            :source-category-slug="section.category.slug"
           />
         </div>
       </article>

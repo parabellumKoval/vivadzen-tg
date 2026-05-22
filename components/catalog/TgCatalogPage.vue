@@ -9,7 +9,11 @@ const props = withDefaults(defineProps<{
   saleOnly: false
 })
 
-const routeCategorySlug = computed(() => normalizeCategorySlug(props.category))
+const route = useRoute()
+const routeCategorySlug = computed(() => {
+  if (props.saleOnly) return null
+  return normalizeCategorySlug(route.params.category)
+})
 const selectedCategorySlug = ref<string | null>(routeCategorySlug.value)
 const categorySlug = computed(() => selectedCategorySlug.value)
 const { t } = useTgI18n()
@@ -22,8 +26,7 @@ const {
   activeCategory,
   loading,
   hasMore,
-  loadMore,
-  loadProducts
+  loadMore
 } = catalog
 
 const products = computed(() => {
@@ -51,23 +54,11 @@ const refreshCatalog = async () => {
   }
 }
 
-onMounted(() => {
-  void refreshCatalog()
-})
-
-watch(routeCategorySlug, (value) => {
+watch(routeCategorySlug, async (value) => {
   selectedCategorySlug.value = value
-})
-
-watch(categorySlug, async () => {
-  if (initialLoading.value) return
-  initialLoading.value = true
-  try {
-    await loadProducts(true)
-    if (props.saleOnly) await exhaustPagination()
-  } finally {
-    initialLoading.value = false
-  }
+  await refreshCatalog()
+}, {
+  immediate: true
 })
 
 const title = computed(() => {
@@ -114,6 +105,7 @@ const selectCategory = (slug: string | null) => {
           v-for="product in products"
           :key="product.id || product.slug"
           :product="product"
+          :source-category-slug="routeCategorySlug"
         />
       </div>
 

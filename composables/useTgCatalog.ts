@@ -77,6 +77,49 @@ export const resolveScopedCatalogCategories = (
   return scopedRoot ? getCategoryChildren(scopedRoot) : categoryTree
 }
 
+export const getCategoryBranchNodes = (category: Record<string, any> | null | undefined) => {
+  const nodes: Record<string, any>[] = []
+  let current = category
+  let guard = 0
+
+  while (current && guard < 32) {
+    nodes.push(current)
+    current = current.parent ?? null
+    guard += 1
+  }
+
+  return nodes
+}
+
+export const resolvePreferredProductCategorySlug = (
+  productCategories: Array<Record<string, any>> | null | undefined,
+  baseCategoryId: string | null,
+  baseCategorySlug: string | null
+) => {
+  const categories = Array.isArray(productCategories) ? productCategories : []
+  let fallbackSlug: string | null = null
+
+  for (const category of categories) {
+    const nodes = getCategoryBranchNodes(category)
+    const leafSlug = normalizeCategorySlug(nodes[0]?.slug)
+
+    if (!fallbackSlug && leafSlug) {
+      fallbackSlug = leafSlug
+    }
+
+    const baseIndex = nodes.findIndex((node) => {
+      return (baseCategoryId && normalizeCategoryId(node?.id) === baseCategoryId)
+        || (baseCategorySlug && normalizeCategorySlug(node?.slug) === baseCategorySlug)
+    })
+
+    if (baseIndex > 0) {
+      return normalizeCategorySlug(nodes[baseIndex - 1]?.slug)
+    }
+  }
+
+  return fallbackSlug
+}
+
 export const useTgCatalog = (categorySlug: Ref<string | null> | ComputedRef<string | null>) => {
   const { $api } = useNuxtApp()
   const config = useRuntimeConfig()
