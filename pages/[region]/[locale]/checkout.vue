@@ -56,9 +56,12 @@ const selectedPayment = computed(() => {
 const phonePlaceholder = computed(() => region.value === 'ua' ? '+380' : '+420')
 const needsWarehouse = computed(() => String(order.delivery.method || '').includes('warehouse'))
 const needsPickupLocation = computed(() => String(order.delivery.method || '') === 'default_pickup')
-const needsAddress = computed(() => String(order.delivery.method || '').includes('address'))
-const needsHouse = computed(() => ['novaposhta_address', 'messenger_address', 'default_address'].includes(String(order.delivery.method || '')))
-const needsZip = computed(() => ['novaposhta_address', 'packeta_address', 'messenger_address'].includes(String(order.delivery.method || '')))
+const needsAddress = computed(() => {
+  const method = String(order.delivery.method || '')
+  return method.includes('address') || method === 'messenger_express'
+})
+const needsHouse = computed(() => ['novaposhta_address', 'messenger_address', 'messenger_express', 'default_address'].includes(String(order.delivery.method || '')))
+const needsZip = computed(() => ['novaposhta_address', 'packeta_address', 'messenger_address', 'messenger_express'].includes(String(order.delivery.method || '')))
 const isPacketaWarehouse = computed(() => order.delivery.method === 'packeta_warehouse')
 const usesManualWarehouseFields = computed(() => needsWarehouse.value && !isPacketaWarehouse.value)
 const packetaPickerLoading = ref(false)
@@ -653,7 +656,7 @@ const submit = async () => {
                 <input v-model="order.delivery.method" type="radio" :value="method.key">
                 <span class="radio-card__title">
                   <strong>{{ method.title }}</strong>
-                  <small>{{ method.label }}</small>
+                  <small>{{ [method.label, method.eta].filter(Boolean).join(' · ') }}</small>
                 </span>
                 <em>{{ deliveryPriceLabel(method.price) }}</em>
               </label>

@@ -203,6 +203,30 @@ onMounted(() => {
       </div>
     </section>
 
+    <section class="tg-page home-external">
+      <a
+        href="https://vivadzen.com"
+        target="_blank"
+        rel="noopener noreferrer external"
+        class="external-card"
+      >
+        <span class="external-card__badge">
+          <TgIcon name="globe" :size="12" :stroke="2.4" />
+          {{ t('home_external_badge') }}
+        </span>
+        <span class="external-card__arrow" aria-hidden="true">
+          <TgIcon name="arrow-right" :size="18" :stroke="2.4" />
+        </span>
+        <h2 class="external-card__title">{{ t('home_external_title') }}</h2>
+        <p class="external-card__text">{{ t('home_external_text') }}</p>
+        <span class="external-card__cta">
+          {{ t('home_external_cta') }}
+          <TgIcon name="arrow-right" :size="14" :stroke="2.4" />
+        </span>
+        <span class="external-card__note">{{ t('home_external_note') }}</span>
+      </a>
+    </section>
+
     <section v-if="vibeTiles.length" class="tg-page home-vibes">
       <div class="home-vibes__track">
         <NuxtLink
@@ -424,6 +448,123 @@ onMounted(() => {
 
 .hero-card__strip span {
   flex-shrink: 0;
+}
+
+/* External site card */
+.home-external {
+  padding-top: 12px;
+  padding-bottom: 0;
+}
+
+.external-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-ink);
+  background-image: url('/images/leaves.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  padding: 18px 18px 14px;
+  color: var(--color-white);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* Dark green overlay over the leaves background */
+.external-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(7, 20, 11, 0.5);
+  pointer-events: none;
+}
+
+.external-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.external-card:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-card-sm);
+}
+
+.external-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  border: 2px solid var(--color-lime);
+  border-radius: var(--radius-full);
+  background: rgba(198, 244, 50, 0.16);
+  color: var(--color-lime);
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.external-card__arrow {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-full);
+  background: var(--color-yellow);
+  color: var(--color-ink);
+  place-items: center;
+  transform: rotate(-45deg);
+}
+
+.external-card__title {
+  margin: 6px 0 0;
+  padding-right: 44px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.external-card__text {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.external-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  width: max-content;
+  border-radius: var(--radius-full);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  padding: 8px 14px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.external-card__note {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 /* Vibe tiles */

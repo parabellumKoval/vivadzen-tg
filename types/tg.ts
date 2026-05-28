@@ -64,6 +64,7 @@ export type TgDeliveryMethod = {
   key: string
   title: string
   label?: string
+  eta?: string
   price?: string | { amount: number; currency: string } | null
   isPriceObject?: boolean
 }

@@ -41,7 +41,14 @@ const savingProfile = ref(false)
 const savingAddress = ref(false)
 const editingAddressId = ref('')
 
+const expandedProfile = ref(false)
+const expandedAddresses = ref(false)
+
 const savedAddressesCount = computed(() => userStore.addresses.length)
+const recipientSummary = computed(() => {
+  const name = [profileForm.first_name, profileForm.last_name].filter(Boolean).join(' ').trim()
+  return name || profileForm.phone || profileForm.email || t('tap_to_edit')
+})
 const addressNeedsWarehouse = computed(() => String(addressForm.deliveryMethod || '').includes('warehouse'))
 const addressNeedsAddress = computed(() => String(addressForm.deliveryMethod || '').includes('address'))
 
@@ -189,42 +196,74 @@ onMounted(async () => {
       </div>
 
       <form class="account-section" @submit.prevent="saveProfileForm">
-        <div class="account-section__header">
-          <h2>{{ t('recipient') }}</h2>
-          <small v-if="profileLoading">{{ t('loading') }}</small>
-        </div>
-
-        <div class="account-form">
-          <label>
-            <span>{{ t('first_name') }}</span>
-            <input v-model="profileForm.first_name" class="tg-field">
-          </label>
-          <label>
-            <span>{{ t('last_name') }}</span>
-            <input v-model="profileForm.last_name" class="tg-field">
-          </label>
-          <label>
-            <span>{{ t('phone') }}</span>
-            <input v-model="profileForm.phone" class="tg-field" inputmode="tel">
-          </label>
-          <label>
-            <span>{{ t('email') }}</span>
-            <input v-model="profileForm.email" class="tg-field" type="email" inputmode="email">
-          </label>
-        </div>
-
-        <button type="submit" class="tg-btn" :disabled="savingProfile">
-          {{ savingProfile ? t('loading') : t('save') }}
+        <button
+          type="button"
+          class="account-section__toggle"
+          :aria-expanded="expandedProfile"
+          @click="expandedProfile = !expandedProfile"
+        >
+          <span class="account-section__heading">
+            <h2>{{ t('recipient') }}</h2>
+            <small v-if="profileLoading">{{ t('loading') }}</small>
+            <small v-else class="account-section__summary">{{ recipientSummary }}</small>
+          </span>
+          <TgIcon
+            name="chevron-down"
+            class="account-section__chevron"
+            :class="{ 'is-open': expandedProfile }"
+            :size="20"
+            :stroke="2.4"
+          />
         </button>
+
+        <div v-show="expandedProfile" class="account-section__body">
+          <div class="account-form">
+            <label>
+              <span>{{ t('first_name') }}</span>
+              <input v-model="profileForm.first_name" class="tg-field">
+            </label>
+            <label>
+              <span>{{ t('last_name') }}</span>
+              <input v-model="profileForm.last_name" class="tg-field">
+            </label>
+            <label>
+              <span>{{ t('phone') }}</span>
+              <input v-model="profileForm.phone" class="tg-field" inputmode="tel">
+            </label>
+            <label>
+              <span>{{ t('email') }}</span>
+              <input v-model="profileForm.email" class="tg-field" type="email" inputmode="email">
+            </label>
+          </div>
+
+          <button type="submit" class="tg-btn" :disabled="savingProfile">
+            {{ savingProfile ? t('loading') : t('save') }}
+          </button>
+        </div>
       </form>
 
       <section class="account-section">
-        <div class="account-section__header">
-          <h2>{{ t('saved_addresses') }}</h2>
-          <small>{{ savedAddressesCount }}</small>
-        </div>
+        <button
+          type="button"
+          class="account-section__toggle"
+          :aria-expanded="expandedAddresses"
+          @click="expandedAddresses = !expandedAddresses"
+        >
+          <span class="account-section__heading">
+            <h2>{{ t('saved_addresses') }}</h2>
+            <small>{{ savedAddressesCount }}</small>
+          </span>
+          <TgIcon
+            name="chevron-down"
+            class="account-section__chevron"
+            :class="{ 'is-open': expandedAddresses }"
+            :size="20"
+            :stroke="2.4"
+          />
+        </button>
 
-        <div v-if="userStore.addresses.length" class="address-list">
+        <div v-show="expandedAddresses" class="account-section__body">
+          <div v-if="userStore.addresses.length" class="address-list">
           <article v-for="address in userStore.addresses" :key="address.id" class="address-card">
             <div>
               <strong>{{ address.title || addressLine(address) }}</strong>
@@ -295,6 +334,7 @@ onMounted(async () => {
             </button>
           </div>
         </form>
+        </div>
       </section>
 
       <div class="settings-list">
@@ -316,6 +356,27 @@ onMounted(async () => {
           <span class="settings-list__label">
             <span class="settings-list__icon"><TgIcon name="info" :size="18" :stroke="2.2" /></span>
             {{ t('about') }}
+          </span>
+          <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
+        </NuxtLink>
+        <NuxtLink :to="pathFor('delivery')" class="settings-list__row">
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="truck" :size="18" :stroke="2.2" /></span>
+            {{ t('nav_delivery') }}
+          </span>
+          <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
+        </NuxtLink>
+        <NuxtLink :to="pathFor('privacy')" class="settings-list__row">
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="lock" :size="18" :stroke="2.2" /></span>
+            {{ t('nav_privacy') }}
+          </span>
+          <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
+        </NuxtLink>
+        <NuxtLink :to="pathFor('terms')" class="settings-list__row">
+          <span class="settings-list__label">
+            <span class="settings-list__icon"><TgIcon name="list" :size="18" :stroke="2.2" /></span>
+            {{ t('nav_terms') }}
           </span>
           <TgIcon name="chevron-right" :size="18" :stroke="2.4" />
         </NuxtLink>
@@ -383,16 +444,51 @@ onMounted(async () => {
 
 .account-card p,
 .account-muted,
-.account-section__header small {
+.account-section__toggle small {
   color: var(--color-text-muted);
   font-size: 13px;
 }
 
-.account-section__header {
+.account-section__toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-section__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-section__summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-section__chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.18s ease;
+}
+
+.account-section__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.account-section__body {
+  display: grid;
+  gap: 14px;
 }
 
 .account-section h2 {
