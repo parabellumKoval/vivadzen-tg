@@ -185,6 +185,83 @@ export const useTgCartStore = defineStore('tgCartStore', {
       this.orderState.delivery.priceCurrency = price?.currency || null
     },
 
+    repeatOrder(order: Record<string, any> | null | undefined) {
+      const rawProducts = Array.isArray(order?.products)
+        ? order!.products
+        : (order?.products && typeof order.products === 'object' ? Object.values(order.products) : [])
+
+      const items: TgCartItem[] = []
+      let added = 0
+      let skipped = 0
+
+      for (const product of rawProducts as any[]) {
+        if (!product || typeof product !== 'object') continue
+
+        const productId = toId(product.id ?? product.product_id)
+        if (productId === '') {
+          skipped += 1
+          continue
+        }
+
+        const stock = product.inStock ?? product.in_stock
+        if (stock !== undefined && stock !== null && Number(stock) <= 0) {
+          skipped += 1
+          continue
+        }
+
+        items.push({
+          productId,
+          variantId: null,
+          quantity: Math.max(1, Math.round(numberValue(product.amount ?? product.quantity ?? product.count, 1))),
+          name: stringValue(product.name) || stringValue(product.shortName) || stringValue(product.short_name),
+          slug: product.slug || undefined,
+          image: getImageSrc(product.image),
+          price: numberValue(product.price),
+          originalPrice: numberValue(product.oldPrice ?? product.old_price, 0) || null,
+          currency: product.currency || order?.currencyCode || order?.currency,
+          variantLabel: stringValue(product.shortName ?? product.short_name)
+        })
+        added += 1
+      }
+
+      if (!added) {
+        return { added, skipped }
+      }
+
+      this.items = items
+
+      const next = defaultOrderState()
+      const delivery = (order?.delivery && typeof order.delivery === 'object') ? order.delivery : {}
+      const payment = (order?.payment && typeof order.payment === 'object') ? order.payment : {}
+      const user = (order?.user && typeof order.user === 'object') ? order.user : {}
+
+      next.delivery = {
+        ...next.delivery,
+        method: delivery.method ?? null,
+        settlement: delivery.settlement ?? null,
+        street: delivery.street ?? null,
+        house: delivery.house ?? null,
+        room: delivery.room ?? null,
+        zip: delivery.zip ?? null,
+        warehouse: delivery.warehouse ?? null,
+        price: typeof delivery.price === 'number' ? delivery.price : null,
+        priceCurrency: delivery.priceCurrency ?? delivery.price_currency ?? null
+      }
+      next.payment = { method: payment.method ?? null }
+      next.user = {
+        first_name: user.first_name ?? null,
+        last_name: user.last_name ?? null,
+        phone: user.phone ?? null,
+        email: user.email ?? null
+      }
+      next.comment = stringValue(order?.comment) || null
+
+      this.orderState = next
+      this.errors = {}
+
+      return { added, skipped }
+    },
+
     clear() {
       this.items = []
       this.orderState = defaultOrderState()

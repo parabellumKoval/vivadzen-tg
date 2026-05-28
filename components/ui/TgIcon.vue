@@ -169,6 +169,28 @@ withDefaults(defineProps<{
     <template v-else-if="name === 'circle'">
       <circle cx="12" cy="12" r="9" />
     </template>
+    <template v-else-if="name === 'repeat'">
+      <path d="M17 2.5 21 6.5 17 10.5" />
+      <path d="M21 6.5H8a4 4 0 0 0-4 4v1" />
+      <path d="M7 21.5 3 17.5 7 13.5" />
+      <path d="M3 17.5h13a4 4 0 0 0 4-4v-1" />
+    </template>
+    <template v-else-if="name === 'card'">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M7 15h4" />
+    </template>
+    <template v-else-if="name === 'phone'">
+      <path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 14l5 2v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3.5 6.2 2 2 0 0 1 6 3Z" />
+    </template>
+    <template v-else-if="name === 'mail'">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
+    </template>
+    <template v-else-if="name === 'pin'">
+      <path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </template>
   </svg>
 </template>
 
