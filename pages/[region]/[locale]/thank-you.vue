@@ -5,7 +5,7 @@ const route = useRoute()
 const cart = useTgCartStore()
 const { t } = useTgI18n()
 const { pathFor, catalogPath } = useTgRouting()
-const { haptic, showAlert } = useTelegram()
+const { haptic } = useTelegram()
 
 const orderCode = computed(() => {
   return String(route.query.order || cart.flashOrder?.code || cart.flashOrder?.id || '')
@@ -13,7 +13,6 @@ const orderCode = computed(() => {
 
 onMounted(() => {
   haptic('success')
-  showAlert(t('order_success'))
 })
 </script>
 

@@ -1,9 +1,12 @@
+import { useTgUserStore } from '~/stores/user'
+
 const normalizeParam = (value: unknown) => {
   if (Array.isArray(value)) return String(value[0] || '').trim().toLowerCase()
   return String(value || '').trim().toLowerCase()
 }
 
 const normalizeApiBase = (value: unknown) => String(value || '').trim().replace(/\/+$/, '')
+const normalizeInitData = (value: unknown) => String(value || '').trim()
 
 const isLoopbackHost = (hostname: string) => {
   const normalized = hostname.toLowerCase()
@@ -34,6 +37,22 @@ const resolveApiBase = (value: unknown) => {
   return apiBase
 }
 
+const resolveTelegramInitData = (nuxtApp: any) => {
+  if (!process.client) return ''
+
+  const fromPlugin = normalizeInitData((nuxtApp as any).$tg?.initData)
+  if (fromPlugin) return fromPlugin
+
+  const fromWindow = normalizeInitData((window as any).Telegram?.WebApp?.initData)
+  if (fromWindow) return fromWindow
+
+  try {
+    return normalizeInitData(useTgUserStore().initData)
+  } catch {
+    return ''
+  }
+}
+
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
   const storefrontCode = String(config.public.storefrontCode || 'main').trim()
@@ -58,9 +77,9 @@ export default defineNuxtPlugin((nuxtApp) => {
         'X-Region': regionAlias
       }
 
-      const telegram = process.client ? (window as any).Telegram?.WebApp : null
-      if (telegram?.initData) {
-        baseHeaders['X-Telegram-Init-Data'] = telegram.initData
+      const telegramInitData = resolveTelegramInitData(nuxtApp)
+      if (telegramInitData) {
+        baseHeaders['X-Telegram-Init-Data'] = telegramInitData
       }
 
       for (const [key, value] of Object.entries(baseHeaders)) {
