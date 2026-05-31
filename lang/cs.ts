@@ -27,6 +27,7 @@ export default {
   total: 'Celkem',
   subtotal: 'Produkty',
   delivery: 'Doprava',
+  cod_fee: 'Dobírka',
   payment: 'Platba',
   recipient: 'Příjemce',
   first_name: 'Jméno',

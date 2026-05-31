@@ -10,7 +10,9 @@ const defaultOrderState = () => ({
     zip: null as string | null,
     warehouse: null as string | null,
     price: null as number | null,
-    priceCurrency: null as string | null
+    priceCurrency: null as string | null,
+    codPrice: null as number | null,
+    codPriceCurrency: null as string | null
   },
   payment: {
     method: null as string | null
@@ -109,8 +111,9 @@ export const useTgCartStore = defineStore('tgCartStore', {
     totalQty: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
     totalPrice: (state) => Number(state.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)),
     deliveryPrice: (state) => numberValue(state.orderState.delivery.price),
+    codPrice: (state) => numberValue(state.orderState.delivery.codPrice),
     finishTotal(): number {
-      return Number((this.totalPrice + this.deliveryPrice).toFixed(2))
+      return Number((this.totalPrice + this.deliveryPrice + this.codPrice).toFixed(2))
     },
     cartPayload: (state) => {
       return state.items.reduce<Record<string, number>>((payload, item) => {
@@ -180,9 +183,14 @@ export const useTgCartStore = defineStore('tgCartStore', {
       this.items = this.items.filter((item) => this.key(item.productId, item.variantId) !== key)
     },
 
-    setDeliveryPrice(price?: { amount?: number; currency?: string } | null) {
-      this.orderState.delivery.price = price?.amount ? numberValue(price.amount) : null
-      this.orderState.delivery.priceCurrency = price?.currency || null
+    setDeliveryPricing(pricing?: {
+      price?: { amount?: number; currency?: string } | null
+      cod?: { amount?: number; currency?: string } | null
+    } | null) {
+      this.orderState.delivery.price = pricing?.price?.amount ? numberValue(pricing.price.amount) : null
+      this.orderState.delivery.priceCurrency = pricing?.price?.currency || null
+      this.orderState.delivery.codPrice = pricing?.cod?.amount ? numberValue(pricing.cod.amount) : null
+      this.orderState.delivery.codPriceCurrency = pricing?.cod?.currency || null
     },
 
     repeatOrder(order: Record<string, any> | null | undefined) {
@@ -245,7 +253,9 @@ export const useTgCartStore = defineStore('tgCartStore', {
         zip: delivery.zip ?? null,
         warehouse: delivery.warehouse ?? null,
         price: typeof delivery.price === 'number' ? delivery.price : null,
-        priceCurrency: delivery.priceCurrency ?? delivery.price_currency ?? null
+        priceCurrency: delivery.priceCurrency ?? delivery.price_currency ?? null,
+        codPrice: typeof delivery.codPrice === 'number' ? delivery.codPrice : null,
+        codPriceCurrency: delivery.codPriceCurrency ?? delivery.cod_price_currency ?? null
       }
       next.payment = { method: payment.method ?? null }
       next.user = {

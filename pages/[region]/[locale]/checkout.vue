@@ -11,7 +11,7 @@ const { t } = useTgI18n()
 const { pathFor, catalogPath, region } = useTgRouting()
 const { user: telegramUser, webApp, haptic } = useTelegram()
 const { formatMoney } = useTgProductUtils()
-const { loadSettings, deliveryMethods, pickupLocations, paymentMethodsFor } = useTgCheckoutOptions()
+const { settings, loadSettings, deliveryMethods, pickupLocations, paymentMethodsFor } = useTgCheckoutOptions()
 const { pickPudo: pickPacketaPoint, isConfigured: packetaConfigured } = useTgPacketa()
 const {
   loadProfile: loadBackendProfile,
@@ -44,6 +44,15 @@ const errorsForStep = (step: number) => Object.keys(errors).filter((key) => step
 const stepHasErrors = (step: number) => errorsForStep(step).length > 0
 
 const paymentMethods = computed(() => paymentMethodsFor(order.delivery.method))
+const isDeliveryCostEnabled = computed(() => Boolean(settings.value?.shipping?.add_to_order_enabled))
+const calculableDeliveryKeys = new Set([
+  'packeta_warehouse',
+  'packeta_address',
+  'novaposhta_warehouse',
+  'novaposhta_address',
+  'messenger_address',
+  'messenger_express'
+])
 
 const selectedDelivery = computed(() => {
   return deliveryMethods.value.find((method) => method.key === order.delivery.method) || null
@@ -122,6 +131,80 @@ const deliveryPriceLabel = (price: any) => {
     return formatMoney(price.amount, price.currency)
   }
   return price || '—'
+}
+
+const shippingQuote = ref<Record<string, any> | null>(null)
+const lastQuoteKey = ref<string | null>(null)
+
+const isMessengerCod = computed(() => {
+  return ['messenger_address', 'messenger_express'].includes(String(order.delivery.method || ''))
+    && order.payment.method === 'messenger_cod'
+})
+
+const shippingPayload = computed(() => {
+  if (!isDeliveryCostEnabled.value || !order.delivery.method || !region.value || !calculableDeliveryKeys.has(order.delivery.method)) {
+    return null
+  }
+
+  return {
+    methodKey: order.delivery.method,
+    destinationCountry: String(region.value).trim().toUpperCase(),
+    weightG: 1000,
+    codAmount: isMessengerCod.value ? (cart.totalPrice || 0) : 0,
+    codEnabled: isMessengerCod.value ? 1 : 0,
+    meta: {
+      subtotal: cart.totalPrice || 0,
+      cod_payment_type: 'cash'
+    }
+  }
+})
+
+const selectedDeliveryEta = computed(() => {
+  const value = selectedDelivery.value?.eta
+  return typeof value === 'string' ? value.trim() : ''
+})
+
+const quotedCodFee = computed(() => {
+  const amount = Number(shippingQuote.value?.breakdown?.cod_gross)
+  const currencyCode = String(shippingQuote.value?.currency || cart.items[0]?.currency || '').trim()
+
+  if (!Number.isFinite(amount) || amount <= 0 || !currencyCode) {
+    return null
+  }
+
+  return {
+    amount,
+    currency: currencyCode
+  }
+})
+
+const quotedDeliveryOnly = computed(() => {
+  const quoteAmount = Number(shippingQuote.value?.amount)
+  const currencyCode = String(shippingQuote.value?.currency || cart.items[0]?.currency || '').trim()
+
+  if (Number.isFinite(quoteAmount) && quoteAmount >= 0 && currencyCode && currencyCode !== 'XXX') {
+    return {
+      amount: Math.max(0, Number((quoteAmount - (quotedCodFee.value?.amount || 0)).toFixed(2))),
+      currency: currencyCode
+    }
+  }
+
+  if (selectedDelivery.value?.price && typeof selectedDelivery.value.price === 'object') {
+    return {
+      amount: Number(selectedDelivery.value.price.amount || 0),
+      currency: selectedDelivery.value.price.currency || cart.items[0]?.currency
+    }
+  }
+
+  return null
+})
+
+const checkoutDeliveryMeta = (method: { price?: any, eta?: string }) => {
+  const parts = [deliveryPriceLabel(method.price)]
+  if (method.eta) {
+    parts.push(method.eta)
+  }
+  return parts.filter(Boolean).join(' · ')
 }
 
 const clearErrors = () => {
@@ -276,14 +359,41 @@ const persistCheckoutProgress = async () => {
   if (isPaymentStepComplete.value) await savePaymentStep()
 }
 
-const syncDeliveryPrice = () => {
-  const method = selectedDelivery.value
-  if (method?.price && typeof method.price === 'object') {
-    cart.setDeliveryPrice(method.price)
+const syncDeliveryPricing = () => {
+  cart.setDeliveryPricing({
+    price: quotedDeliveryOnly.value,
+    cod: quotedCodFee.value
+  })
+}
+
+const fetchShippingQuote = async () => {
+  if (!shippingPayload.value) {
+    shippingQuote.value = null
+    lastQuoteKey.value = null
+    syncDeliveryPricing()
     return
   }
 
-  cart.setDeliveryPrice(null)
+  const payloadKey = JSON.stringify(shippingPayload.value)
+  if (payloadKey === lastQuoteKey.value && shippingQuote.value) {
+    syncDeliveryPricing()
+    return
+  }
+
+  lastQuoteKey.value = payloadKey
+
+  try {
+    shippingQuote.value = await $api('/shipping/quote', {
+      method: 'POST',
+      body: shippingPayload.value
+    })
+  } catch (error) {
+    console.error('Failed to fetch shipping quote', error)
+    shippingQuote.value = null
+    lastQuoteKey.value = null
+  }
+
+  syncDeliveryPricing()
 }
 
 const resetInvalidPayment = () => {
@@ -306,7 +416,7 @@ const applySavedAddress = (address: TgSavedAddress, activateStep = true) => {
   if (!userStore.applyAddressToDelivery(address.id, order.delivery)) return
 
   selectedSavedAddressId.value = address.id
-  syncDeliveryPrice()
+  syncDeliveryPricing()
   resetInvalidPayment()
   applySavedPayment()
 
@@ -329,7 +439,9 @@ const resetDeliveryFields = () => {
   order.delivery.room = ''
   order.delivery.zip = ''
   order.delivery.warehouse = ''
-  syncDeliveryPrice()
+  shippingQuote.value = null
+  lastQuoteKey.value = null
+  syncDeliveryPricing()
 }
 
 const onSavedAddressChange = () => {
@@ -408,11 +520,18 @@ const setInitialStep = () => {
 }
 
 watch(() => order.delivery.method, () => {
-  syncDeliveryPrice()
   syncPickupSelection()
   resetInvalidPayment()
   applySavedPayment()
 })
+
+watch(shippingPayload, () => {
+  fetchShippingQuote()
+}, { immediate: true })
+
+watch([quotedDeliveryOnly, quotedCodFee], () => {
+  syncDeliveryPricing()
+}, { immediate: true })
 
 watch(pickupLocations, () => {
   syncPickupSelection()
@@ -452,7 +571,7 @@ onMounted(async () => {
     applySavedAddress(userStore.addresses[0], false)
   }
 
-  syncDeliveryPrice()
+  await fetchShippingQuote()
   syncPickupSelection()
   resetInvalidPayment()
   applySavedPayment()
@@ -656,9 +775,9 @@ const submit = async () => {
                 <input v-model="order.delivery.method" type="radio" :value="method.key">
                 <span class="radio-card__title">
                   <strong>{{ method.title }}</strong>
-                  <small>{{ [method.label, method.eta].filter(Boolean).join(' · ') }}</small>
+                  <small>{{ method.label || t('delivery') }}</small>
                 </span>
-                <em>{{ deliveryPriceLabel(method.price) }}</em>
+                <em>{{ checkoutDeliveryMeta(method) }}</em>
               </label>
             </div>
             <small v-if="errors.delivery" class="tg-error">{{ errors.delivery }}</small>
@@ -806,7 +925,11 @@ const submit = async () => {
               </div>
               <div>
                 <span>{{ t('delivery') }}</span>
-                <strong>{{ settingsReady ? formatMoney(cart.deliveryPrice, cart.items[0]?.currency) : t('loading') }}</strong>
+                <strong>{{ settingsReady ? formatMoney(cart.deliveryPrice, cart.orderState.delivery.priceCurrency || cart.items[0]?.currency) : t('loading') }}</strong>
+              </div>
+              <div v-if="cart.codPrice > 0">
+                <span>{{ t('cod_fee') }}</span>
+                <strong>{{ settingsReady ? formatMoney(cart.codPrice, cart.orderState.delivery.codPriceCurrency || cart.items[0]?.currency) : t('loading') }}</strong>
               </div>
               <div class="checkout-total__final">
                 <span>{{ t('total') }}</span>

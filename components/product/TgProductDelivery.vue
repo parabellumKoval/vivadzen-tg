@@ -27,6 +27,23 @@ const formattedPrice = (price: any) => {
 
 const previewDelivery = computed(() => deliveryMethods.value.slice(0, 3))
 const previewPayments = computed(() => allPayments.value.slice(0, 3))
+
+const deliveryMeta = (method: { price?: any, eta?: string, isPriceObject?: boolean }) => {
+  const parts: string[] = []
+
+  if (method.isPriceObject) {
+    const formatted = formattedPrice(method.price)
+    if (formatted) {
+      parts.push(`${t('delivery_from')} ${formatted}`)
+    }
+  }
+
+  if (method.eta) {
+    parts.push(method.eta)
+  }
+
+  return parts.join(' · ') || '—'
+}
 </script>
 
 <template>
@@ -49,12 +66,7 @@ const previewPayments = computed(() => allPayments.value.slice(0, 3))
     <ul class="tg-prod-delivery__list">
       <li v-for="method in (expanded ? deliveryMethods : previewDelivery)" :key="method.key">
         <span class="tg-prod-delivery__name">{{ method.title }} <small>· {{ method.label }}</small></span>
-        <span class="tg-prod-delivery__price">
-          <template v-if="method.isPriceObject">
-            {{ t('delivery_from') }} {{ formattedPrice(method.price) }}
-          </template>
-          <template v-else>—</template>
-        </span>
+        <span class="tg-prod-delivery__price">{{ deliveryMeta(method) }}</span>
       </li>
     </ul>
 

@@ -27,6 +27,7 @@ export default {
   total: 'Total',
   subtotal: 'Products',
   delivery: 'Delivery',
+  cod_fee: 'Cash on delivery',
   payment: 'Payment',
   recipient: 'Recipient',
   first_name: 'First name',

@@ -27,6 +27,7 @@ export default {
   total: 'Разом',
   subtotal: 'Товари',
   delivery: 'Доставка',
+  cod_fee: 'Накладений платіж',
   payment: 'Оплата',
   recipient: 'Отримувач',
   first_name: "Ім'я",
