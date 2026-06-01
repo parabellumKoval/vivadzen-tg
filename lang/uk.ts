@@ -186,7 +186,7 @@ export default {
   payment_default_cash: 'Готівка',
   payment_card_online: 'Оплата карткою',
   payment_bank_transfer: 'Банківський переказ',
-  payment_messenger_cod: 'Messenger COD',
+  payment_messenger_cod: 'Післяплата Messenger',
   in_stock: 'В наявності',
   out_of_stock: 'Немає в наявності',
   product_delivery_title: 'Доставка та оплата',

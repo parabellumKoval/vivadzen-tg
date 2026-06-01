@@ -186,7 +186,7 @@ export default {
   payment_default_cash: 'Cash',
   payment_card_online: 'Card online',
   payment_bank_transfer: 'Bank transfer',
-  payment_messenger_cod: 'Messenger COD',
+  payment_messenger_cod: 'Messenger cash on delivery',
   in_stock: 'In stock',
   out_of_stock: 'Out of stock',
   product_delivery_title: 'Delivery & payment',

@@ -186,7 +186,7 @@ export default {
   payment_default_cash: 'Hotově',
   payment_card_online: 'Platba kartou',
   payment_bank_transfer: 'Bankovní převod',
-  payment_messenger_cod: 'Messenger dobírka',
+  payment_messenger_cod: 'Dobírka Messenger',
   in_stock: 'Skladem',
   out_of_stock: 'Není skladem',
   product_delivery_title: 'Doprava a platba',

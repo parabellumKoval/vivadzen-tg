@@ -302,7 +302,7 @@ export const useTgCheckoutOptions = () => {
     {
       key: 'bank_transfer',
       title: t('payment_bank_transfer'),
-      payments: ['packeta_warehouse', 'packeta_address', 'default_address', 'default_pickup']
+      payments: ['packeta_warehouse', 'packeta_address', 'default_address', 'default_pickup', 'messenger_address', 'messenger_express']
     },
     {
       key: 'messenger_cod',
