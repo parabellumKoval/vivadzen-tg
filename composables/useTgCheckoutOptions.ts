@@ -50,6 +50,11 @@ const normalizeText = (value: unknown) => {
   return ''
 }
 
+const DEFAULT_MESSENGER_CASH_TIERS = [
+  { max_amount: 1000, fee: 30 },
+  { max_amount: 999999, fee: 60 }
+]
+
 export const useTgCheckoutOptions = () => {
   const { $api } = useNuxtApp()
   const { t } = useTgI18n()
@@ -118,6 +123,45 @@ export const useTgCheckoutOptions = () => {
   }
 
   const messengerExpressEnabled = computed(() => Boolean(getByPath(settings.value, 'shipping.messenger.express.enabled', false)))
+
+  const messengerCodTiers = computed(() => {
+    return normalizeRates(getByPath(settings.value, 'shipping.messenger.cod.cash_tiers', DEFAULT_MESSENGER_CASH_TIERS))
+      .map((row) => ({
+        maxAmount: Number(row?.max_amount || 0),
+        fee: Number(row?.fee || 0)
+      }))
+      .filter((row) => Number.isFinite(row.maxAmount) && row.maxAmount > 0 && Number.isFinite(row.fee) && row.fee >= 0)
+      .sort((a, b) => a.maxAmount - b.maxAmount)
+  })
+
+  const messengerCurrency = computed(() => {
+    return String(
+      getByPath(settings.value, 'shipping.messenger.currency')
+      || getByPath(settings.value, 'shipping.zasilkovna.currency')
+      || currency.value
+    ).toUpperCase()
+  })
+
+  const messengerCodFeeInfo = (orderAmount?: number | null) => {
+    const tiers = messengerCodTiers.value
+    if (!tiers.length) return null
+
+    const amount = Number(orderAmount)
+    if (Number.isFinite(amount) && amount > 0) {
+      const exactTier = tiers.find((tier) => amount <= tier.maxAmount) || tiers[tiers.length - 1]
+      return {
+        currency: messengerCurrency.value,
+        amount: exactTier.fee
+      }
+    }
+
+    const fees = tiers.map((tier) => tier.fee)
+    return {
+      currency: messengerCurrency.value,
+      minAmount: Math.min(...fees),
+      maxAmount: Math.max(...fees)
+    }
+  }
 
   const allDeliveryMethods = computed<TgDeliveryMethod[]>(() => [
     {
@@ -336,12 +380,18 @@ export const useTgCheckoutOptions = () => {
     })
   }
 
+  const deliveryTitleByKey = (key: string | null | undefined) => {
+    return deliveryMethods.value.find((method) => method.key === key)?.title || key || ''
+  }
+
   return {
     settings,
     settingsLoading,
     loadSettings,
     deliveryMethods,
     pickupLocations,
-    paymentMethodsFor
+    paymentMethodsFor,
+    messengerCodFeeInfo,
+    deliveryTitleByKey
   }
 }

@@ -74,6 +74,7 @@ export type TgPaymentMethod = {
   title: string
   label?: string
   payments?: string[]
+  meta?: string | null
 }
 
 export type TgOrder = Record<string, any> & {

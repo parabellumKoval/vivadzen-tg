@@ -22,7 +22,7 @@ const paragraphsOf = (body: string) => {
 </script>
 
 <template>
-  <TgLayout :title="title" :show-back="true" :show-lang="true">
+  <TgLayout :title="title" :show-lang="true">
     <section class="tg-page info-page">
       <header class="info-hero">
         <span class="info-hero__icon">

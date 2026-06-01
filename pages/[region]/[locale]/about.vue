@@ -17,7 +17,7 @@ const values = computed(() => [
 </script>
 
 <template>
-  <TgLayout :title="t('about')" :show-back="true" :show-lang="true">
+  <TgLayout :title="t('about')" :show-lang="true">
     <section class="tg-page about-page">
       <div class="about-hero">
         <span class="about-hero__pill">

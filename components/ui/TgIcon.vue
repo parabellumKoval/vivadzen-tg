@@ -191,6 +191,42 @@ withDefaults(defineProps<{
       <path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11Z" />
       <circle cx="12" cy="10" r="2.5" />
     </template>
+    <template v-else-if="name === 'menu'">
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </template>
+    <template v-else-if="name === 'external'">
+      <path d="M14 4h6v6" />
+      <path d="M20 4 12 12" />
+      <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
+    </template>
+
+    <!-- Social / messengers -->
+    <template v-else-if="name === 'telegram'">
+      <path d="M21 4 2.5 11.5l5.5 2 2 6.5 3.5-4 5 3.5L21 4Z" />
+      <path d="m8 13.5 12-9-9.5 11" />
+    </template>
+    <template v-else-if="name === 'whatsapp'">
+      <path d="M3.5 20.5 5 16a8 8 0 1 1 3 3l-4.5 1.5Z" />
+      <path d="M8.5 9.5c.5 3 2 4.5 5 5l1.5-1.5 2.5 1.5c0 1.5-1.5 2.5-3 2.5-3 0-7-4-7-7 0-1.5 1-3 2.5-3l1.5 2.5L8.5 9.5Z" />
+    </template>
+    <template v-else-if="name === 'viber'">
+      <path d="M4 4h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-3l-4 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
+      <path d="M8.5 8.5c.5 2.5 2 4 4.5 4.5" />
+    </template>
+    <template v-else-if="name === 'instagram'">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
+    </template>
+    <template v-else-if="name === 'facebook'">
+      <path d="M14 21v-8h2.5l.5-3.5H14V7.5c0-1 .5-1.5 1.5-1.5H17V3h-2.5C12.5 3 11 4.5 11 7v2.5H9V13h2v8h3Z" />
+    </template>
+    <template v-else-if="name === 'youtube'">
+      <rect x="3" y="6" width="18" height="12" rx="3" />
+      <path d="m10.5 9.5 5 2.5-5 2.5v-5Z" fill="currentColor" stroke="none" />
+    </template>
   </svg>
 </template>
 

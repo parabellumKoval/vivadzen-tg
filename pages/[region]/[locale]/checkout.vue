@@ -11,7 +11,7 @@ const { t } = useTgI18n()
 const { pathFor, catalogPath, region } = useTgRouting()
 const { user: telegramUser, webApp, haptic } = useTelegram()
 const { formatMoney } = useTgProductUtils()
-const { settings, loadSettings, deliveryMethods, pickupLocations, paymentMethodsFor } = useTgCheckoutOptions()
+const { settings, loadSettings, deliveryMethods, pickupLocations, paymentMethodsFor, messengerCodFeeInfo } = useTgCheckoutOptions()
 const { pickPudo: pickPacketaPoint, isConfigured: packetaConfigured } = useTgPacketa()
 const {
   loadProfile: loadBackendProfile,
@@ -19,6 +19,16 @@ const {
   savePaymentMethod: saveBackendPaymentMethod,
   saveAddress: saveBackendAddress
 } = useTgProfileApi()
+
+type CheckoutFieldRule = {
+  required?: boolean
+  hidden?: boolean
+  requiredIf?: {
+    field?: string
+    values?: string[]
+  } | null
+  children?: Record<string, CheckoutFieldRule>
+}
 
 const order = cart.orderState
 const loading = ref(false)
@@ -28,10 +38,14 @@ const activeStep = ref(1)
 const selectedSavedAddressId = ref('')
 const errors = reactive<Record<string, string>>({})
 const submitError = ref('')
+const checkoutRules = ref<Record<string, CheckoutFieldRule> | null>(null)
+const checkoutRulesLoading = ref(false)
 
 const userFields = ['first_name', 'last_name', 'phone', 'email']
 const deliveryFields = ['delivery', 'settlement', 'warehouse', 'street', 'house', 'zip']
 const paymentFields = ['payment']
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phonePattern = /^[+\d][\d\s\-()]{6,}$/
 
 const stepOfField = (key: string): number => {
   if (userFields.includes(key)) return 1
@@ -62,6 +76,8 @@ const selectedPayment = computed(() => {
   return paymentMethods.value.find((method) => method.key === order.payment.method) || null
 })
 
+const countryCode = computed(() => String(region.value || '').trim().toUpperCase())
+const pragueCityLabel = computed(() => t('prague_city'))
 const phonePlaceholder = computed(() => region.value === 'ua' ? '+380' : '+420')
 const needsWarehouse = computed(() => String(order.delivery.method || '').includes('warehouse'))
 const needsPickupLocation = computed(() => String(order.delivery.method || '') === 'default_pickup')
@@ -69,11 +85,109 @@ const needsAddress = computed(() => {
   const method = String(order.delivery.method || '')
   return method.includes('address') || method === 'messenger_express'
 })
-const needsHouse = computed(() => ['novaposhta_address', 'messenger_address', 'messenger_express', 'default_address'].includes(String(order.delivery.method || '')))
-const needsZip = computed(() => ['novaposhta_address', 'packeta_address', 'messenger_address', 'messenger_express'].includes(String(order.delivery.method || '')))
+const isMessengerMethod = computed(() => ['messenger_address', 'messenger_express'].includes(String(order.delivery.method || '')))
+const isMessengerExpress = computed(() => order.delivery.method === 'messenger_express')
+const needsHouse = computed(() => ['novaposhta_address', 'default_address'].includes(String(order.delivery.method || '')))
+const showsZipField = computed(() => ['novaposhta_address', 'packeta_address'].includes(String(order.delivery.method || '')))
 const isPacketaWarehouse = computed(() => order.delivery.method === 'packeta_warehouse')
 const usesManualWarehouseFields = computed(() => needsWarehouse.value && !isPacketaWarehouse.value)
 const packetaPickerLoading = ref(false)
+const messengerCodPreviewQuote = ref<Record<string, any> | null>(null)
+const messengerCodPreviewKey = ref<string | null>(null)
+
+const hasValue = (value: unknown) => String(value ?? '').trim().length > 0
+
+const appendHouseToStreet = (street: unknown, house: unknown) => {
+  const streetText = String(street ?? '').trim()
+  const houseText = String(house ?? '').trim()
+
+  if (!houseText) return streetText
+  if (!streetText) return houseText
+
+  const normalizedStreet = streetText.toLowerCase()
+  const normalizedHouse = houseText.toLowerCase()
+  if (
+    normalizedStreet.endsWith(normalizedHouse)
+    || normalizedStreet.includes(` ${normalizedHouse}`)
+    || normalizedStreet.includes(`, ${normalizedHouse}`)
+  ) {
+    return streetText
+  }
+
+  return `${streetText}, ${houseText}`
+}
+
+const addressLineOf = (street: unknown, house: unknown, room: unknown) => {
+  const streetLine = appendHouseToStreet(street, house)
+  const roomText = String(room ?? '').trim()
+  return [streetLine, roomText].filter(Boolean).join(', ')
+}
+
+const resolveFieldRule = (path: string): CheckoutFieldRule | null => {
+  const segments = path.split('.').filter(Boolean)
+  let node: Record<string, CheckoutFieldRule> | undefined | null = checkoutRules.value
+  let meta: CheckoutFieldRule | null = null
+
+  for (const segment of segments) {
+    meta = node?.[segment] || null
+    if (!meta) return null
+    node = meta.children || null
+  }
+
+  return meta
+}
+
+const fieldValueByPath = (path: string): unknown => {
+  return path.split('.').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object') return undefined
+    return (current as Record<string, unknown>)[segment]
+  }, {
+    user: order.user,
+    delivery: order.delivery,
+    payment: order.payment
+  })
+}
+
+const isFieldRequired = (path: string, fallback = false) => {
+  const rule = resolveFieldRule(path)
+  if (!rule || rule.hidden) {
+    return fallback
+  }
+
+  if (rule.required) {
+    return true
+  }
+
+  if (!rule.requiredIf?.field || !rule.requiredIf.values?.length) {
+    return false
+  }
+
+  const currentValue = String(fieldValueByPath(rule.requiredIf.field) ?? '').trim()
+  return rule.requiredIf.values.some((value) => String(value).trim() === currentValue)
+}
+
+const userFieldRequired = (field: 'first_name' | 'last_name' | 'phone' | 'email') => {
+  const fallbackMap = {
+    first_name: true,
+    last_name: true,
+    phone: true,
+    email: true
+  }
+
+  return isFieldRequired(`user.${field}`, fallbackMap[field])
+}
+
+const deliveryFieldRequired = (field: 'settlement' | 'warehouse' | 'street' | 'house' | 'zip') => {
+  const fallbackMap = {
+    settlement: needsWarehouse.value || needsAddress.value,
+    warehouse: needsPickupLocation.value || needsWarehouse.value,
+    street: needsAddress.value,
+    house: needsHouse.value,
+    zip: showsZipField.value
+  }
+
+  return isFieldRequired(`delivery.${field}`, fallbackMap[field])
+}
 
 const recipientName = computed(() => {
   return [order.user.first_name, order.user.last_name].filter(Boolean).join(' ')
@@ -86,7 +200,7 @@ const recipientSummary = computed(() => {
 const paymentSummary = computed(() => selectedPayment.value?.title || order.payment.method || '')
 
 const deliveryDetails = computed(() => {
-  const addressLine = [order.delivery.street, order.delivery.house, order.delivery.room].filter(Boolean).join(', ')
+  const addressLine = addressLineOf(order.delivery.street, order.delivery.house, order.delivery.room)
   return [order.delivery.settlement, order.delivery.warehouse || addressLine || order.delivery.zip].filter(Boolean).join(', ')
 })
 
@@ -95,29 +209,33 @@ const deliverySummary = computed(() => {
   return deliveryDetails.value ? `${method}: ${deliveryDetails.value}` : method
 })
 
-const isUserStepComplete = computed(() => Boolean(
-  order.user.first_name
-  && order.user.last_name
-  && order.user.phone
-  && order.user.email
-))
+const isUserStepComplete = computed(() => {
+  const phone = String(order.user.phone || '')
+  const email = String(order.user.email || '')
+
+  return Boolean(
+    (!userFieldRequired('first_name') || hasValue(order.user.first_name))
+    && (!userFieldRequired('last_name') || hasValue(order.user.last_name))
+    && (!userFieldRequired('phone') || hasValue(phone))
+    && (!hasValue(phone) || phonePattern.test(phone))
+    && (!userFieldRequired('email') || hasValue(email))
+    && (!hasValue(email) || emailPattern.test(email))
+  )
+})
 const isPaymentStepComplete = computed(() => Boolean(
   order.payment.method
   && (!paymentMethods.value.length || paymentMethods.value.some((method) => method.key === order.payment.method))
 ))
 const isDeliveryStepComplete = computed(() => {
   if (!order.delivery.method) return false
-  if (needsPickupLocation.value) return Boolean(order.delivery.warehouse)
-  if (needsWarehouse.value) return Boolean(order.delivery.settlement && order.delivery.warehouse)
-  if (needsAddress.value) {
-    return Boolean(
-      order.delivery.settlement
-      && order.delivery.street
-      && (!needsHouse.value || order.delivery.house)
-      && (!needsZip.value || order.delivery.zip)
-    )
-  }
-  return true
+
+  return Boolean(
+    (!deliveryFieldRequired('warehouse') || hasValue(order.delivery.warehouse))
+    && (!deliveryFieldRequired('settlement') || hasValue(order.delivery.settlement))
+    && (!deliveryFieldRequired('street') || hasValue(order.delivery.street))
+    && (!deliveryFieldRequired('house') || hasValue(order.delivery.house))
+    && (!deliveryFieldRequired('zip') || hasValue(order.delivery.zip))
+  )
 })
 
 const allCheckoutStepsComplete = computed(() => (
@@ -207,24 +325,73 @@ const checkoutDeliveryMeta = (method: { price?: any, eta?: string }) => {
   return parts.filter(Boolean).join(' · ')
 }
 
+const messengerCodPreviewPayload = computed(() => {
+  if (!isDeliveryCostEnabled.value || !isMessengerMethod.value || !order.delivery.method || !region.value) {
+    return null
+  }
+
+  return {
+    methodKey: order.delivery.method,
+    destinationCountry: String(region.value).trim().toUpperCase(),
+    weightG: 1000,
+    codAmount: cart.totalPrice || 0,
+    codEnabled: 1,
+    meta: {
+      subtotal: cart.totalPrice || 0,
+      cod_payment_type: 'cash'
+    }
+  }
+})
+
+const messengerCodPreviewFee = computed(() => {
+  const amount = Number(messengerCodPreviewQuote.value?.breakdown?.cod_gross)
+  const currencyCode = String(messengerCodPreviewQuote.value?.currency || '').trim()
+
+  if (Number.isFinite(amount) && amount > 0 && currencyCode) {
+    return {
+      amount,
+      currency: currencyCode
+    }
+  }
+
+  const fallback = messengerCodFeeInfo(cart.totalPrice || 0)
+  if (fallback && 'amount' in fallback && typeof fallback.amount === 'number') {
+    return {
+      amount: fallback.amount,
+      currency: fallback.currency
+    }
+  }
+
+  return null
+})
+
+const paymentMethodMeta = (method: { key: string }) => {
+  if (method.key !== 'messenger_cod' || !isMessengerMethod.value) {
+    return ''
+  }
+
+  if (!messengerCodPreviewFee.value) {
+    return ''
+  }
+
+  return `${t('cod_fee')}: ${formatMoney(messengerCodPreviewFee.value.amount, messengerCodPreviewFee.value.currency)}`
+}
+
 const clearErrors = () => {
   Object.keys(errors).forEach((key) => delete errors[key])
 }
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phonePattern = /^[+\d][\d\s\-()]{6,}$/
-
 const addUserErrors = () => {
-  if (!order.user.first_name) errors.first_name = t('required')
-  if (!order.user.last_name) errors.last_name = t('required')
-  if (!order.user.phone) {
+  if (userFieldRequired('first_name') && !hasValue(order.user.first_name)) errors.first_name = t('required')
+  if (userFieldRequired('last_name') && !hasValue(order.user.last_name)) errors.last_name = t('required')
+  if (userFieldRequired('phone') && !hasValue(order.user.phone)) {
     errors.phone = t('required')
-  } else if (!phonePattern.test(String(order.user.phone))) {
+  } else if (hasValue(order.user.phone) && !phonePattern.test(String(order.user.phone))) {
     errors.phone = t('error_invalid_phone')
   }
-  if (!order.user.email) {
+  if (userFieldRequired('email') && !hasValue(order.user.email)) {
     errors.email = t('required')
-  } else if (!emailPattern.test(String(order.user.email))) {
+  } else if (hasValue(order.user.email) && !emailPattern.test(String(order.user.email))) {
     errors.email = t('error_invalid_email')
   }
 }
@@ -235,13 +402,11 @@ const addPaymentErrors = () => {
 
 const addDeliveryErrors = () => {
   if (!order.delivery.method) errors.delivery = t('select_delivery')
-  if (needsPickupLocation.value && !order.delivery.warehouse) errors.warehouse = t('required')
-  if (needsWarehouse.value && !order.delivery.settlement) errors.settlement = t('required')
-  if (needsWarehouse.value && !order.delivery.warehouse) errors.warehouse = t('required')
-  if (needsAddress.value && !order.delivery.settlement) errors.settlement = t('required')
-  if (needsAddress.value && !order.delivery.street) errors.street = t('required')
-  if (needsHouse.value && !order.delivery.house) errors.house = t('required')
-  if (needsZip.value && !order.delivery.zip) errors.zip = t('required')
+  if (deliveryFieldRequired('warehouse') && !hasValue(order.delivery.warehouse)) errors.warehouse = t('required')
+  if (deliveryFieldRequired('settlement') && !hasValue(order.delivery.settlement)) errors.settlement = t('required')
+  if (deliveryFieldRequired('street') && !hasValue(order.delivery.street)) errors.street = t('required')
+  if (deliveryFieldRequired('house') && !hasValue(order.delivery.house)) errors.house = t('required')
+  if (deliveryFieldRequired('zip') && !hasValue(order.delivery.zip)) errors.zip = t('required')
 }
 
 const validateStep = (step: number) => {
@@ -328,6 +493,7 @@ const savePaymentStep = async () => {
 }
 
 const saveDeliveryStep = async () => {
+  normalizeMessengerDeliveryFields()
   const address = userStore.saveAddressFromDelivery(order.delivery)
   const savedAddress = await saveBackendAddress(address)
   if (savedAddress?.id) selectedSavedAddressId.value = savedAddress.id
@@ -357,6 +523,89 @@ const persistCheckoutProgress = async () => {
   if (isUserStepComplete.value) await saveUserStep()
   if (isDeliveryStepComplete.value) await saveDeliveryStep()
   if (isPaymentStepComplete.value) await savePaymentStep()
+}
+
+const loadCheckoutRules = async () => {
+  if (checkoutRulesLoading.value) return
+
+  checkoutRulesLoading.value = true
+
+  try {
+    const response = await $api('/order/rules', {
+      method: 'GET',
+      query: {
+        storefront: 'telegram',
+        storefront_code: 'telegram',
+        destinationCountry: countryCode.value || undefined,
+        shipping_country_code: countryCode.value || undefined
+      }
+    })
+
+    checkoutRules.value = response?.data || response || null
+  } catch (error) {
+    console.error('Failed to load checkout rules', error)
+    checkoutRules.value = null
+  } finally {
+    checkoutRulesLoading.value = false
+  }
+}
+
+const applyApiErrors = (source: Record<string, any> | null | undefined, prefix = '') => {
+  if (!source || typeof source !== 'object') return
+
+  Object.entries(source).forEach(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key
+
+    if (Array.isArray(value)) {
+      const normalizedKey = path.startsWith('payment.')
+        ? 'payment'
+        : (path === 'delivery.method' ? 'delivery' : (path.split('.').pop() || path))
+      errors[normalizedKey] = String(value[0] || '')
+      return
+    }
+
+    if (value && typeof value === 'object') {
+      applyApiErrors(value as Record<string, any>, path)
+    }
+  })
+}
+
+const buildOrderPayload = (telegramProfile: Record<string, any> | null) => {
+  const messengerStreet = isMessengerMethod.value
+    ? appendHouseToStreet(order.delivery.street, order.delivery.house)
+    : String(order.delivery.street || '').trim()
+
+  return {
+  provider: 'data',
+  storefront: 'telegram',
+  storefront_code: 'telegram',
+  destinationCountry: countryCode.value || null,
+  shipping_country_code: countryCode.value || null,
+  telegram_user_id: telegramProfile?.id || null,
+  telegram_user: telegramProfile,
+  user: {
+    first_name: order.user.first_name || null,
+    last_name: order.user.last_name || null,
+    phone: order.user.phone || null,
+    email: order.user.email || null
+  },
+  delivery: {
+    method: order.delivery.method || null,
+    settlement: isMessengerExpress.value ? pragueCityLabel.value : (order.delivery.settlement || null),
+    street: messengerStreet || null,
+    house: isMessengerMethod.value ? null : (order.delivery.house || null),
+    room: order.delivery.room || null,
+    zip: isMessengerMethod.value ? null : (order.delivery.zip || null),
+    warehouse: order.delivery.warehouse || null,
+    price: order.delivery.price ?? null,
+    priceCurrency: order.delivery.priceCurrency || null
+  },
+  payment: {
+    method: order.payment.method || null
+  },
+  comment: order.comment || null,
+  products: { ...cart.cartPayload }
+  }
 }
 
 const syncDeliveryPricing = () => {
@@ -415,6 +664,7 @@ const applySavedPayment = () => {
 const applySavedAddress = (address: TgSavedAddress, activateStep = true) => {
   if (!userStore.applyAddressToDelivery(address.id, order.delivery)) return
 
+  normalizeMessengerDeliveryFields()
   selectedSavedAddressId.value = address.id
   syncDeliveryPricing()
   resetInvalidPayment()
@@ -427,7 +677,7 @@ const applySavedAddress = (address: TgSavedAddress, activateStep = true) => {
 }
 
 const savedAddressLine = (address: TgSavedAddress) => {
-  const streetLine = [address.street, address.house, address.room].filter(Boolean).join(', ')
+  const streetLine = addressLineOf(address.street, address.house, address.room)
   return [address.settlement, address.warehouse || streetLine || address.zip].filter(Boolean).join(', ') || address.title
 }
 
@@ -442,6 +692,26 @@ const resetDeliveryFields = () => {
   shippingQuote.value = null
   lastQuoteKey.value = null
   syncDeliveryPricing()
+}
+
+const normalizeMessengerDeliveryFields = () => {
+  if (!isMessengerMethod.value) {
+    return
+  }
+
+  if (hasValue(order.delivery.house)) {
+    order.delivery.street = appendHouseToStreet(order.delivery.street, order.delivery.house)
+  }
+
+  order.delivery.house = ''
+  order.delivery.zip = ''
+  delete errors.house
+  delete errors.zip
+
+  if (isMessengerExpress.value) {
+    order.delivery.settlement = pragueCityLabel.value
+    delete errors.settlement
+  }
 }
 
 const onSavedAddressChange = () => {
@@ -520,6 +790,7 @@ const setInitialStep = () => {
 }
 
 watch(() => order.delivery.method, () => {
+  normalizeMessengerDeliveryFields()
   syncPickupSelection()
   resetInvalidPayment()
   applySavedPayment()
@@ -531,6 +802,36 @@ watch(shippingPayload, () => {
 
 watch([quotedDeliveryOnly, quotedCodFee], () => {
   syncDeliveryPricing()
+}, { immediate: true })
+
+const fetchMessengerCodPreview = async () => {
+  if (!messengerCodPreviewPayload.value) {
+    messengerCodPreviewQuote.value = null
+    messengerCodPreviewKey.value = null
+    return
+  }
+
+  const payloadKey = JSON.stringify(messengerCodPreviewPayload.value)
+  if (payloadKey === messengerCodPreviewKey.value && messengerCodPreviewQuote.value) {
+    return
+  }
+
+  messengerCodPreviewKey.value = payloadKey
+
+  try {
+    messengerCodPreviewQuote.value = await $api('/shipping/quote', {
+      method: 'POST',
+      body: messengerCodPreviewPayload.value
+    })
+  } catch (error) {
+    console.error('Failed to fetch Messenger COD preview', error)
+    messengerCodPreviewQuote.value = null
+    messengerCodPreviewKey.value = null
+  }
+}
+
+watch(messengerCodPreviewPayload, () => {
+  fetchMessengerCodPreview()
 }, { immediate: true })
 
 watch(pickupLocations, () => {
@@ -562,10 +863,12 @@ onMounted(async () => {
 
   await Promise.all([
     loadSettings(),
-    loadBackendProfile()
+    loadBackendProfile(),
+    loadCheckoutRules()
   ])
 
   userStore.fillOrderUser(order.user)
+  normalizeMessengerDeliveryFields()
 
   if (!order.delivery.method && userStore.addresses[0]) {
     applySavedAddress(userStore.addresses[0], false)
@@ -603,17 +906,10 @@ const submit = async () => {
   const telegramProfile = telegramUser.value || userStore.user || null
 
   try {
+    const payload = buildOrderPayload(telegramProfile)
     const response = await $api('/order', {
       method: 'POST',
-      body: {
-        ...order,
-        provider: 'data',
-        storefront: 'telegram',
-        storefront_code: 'telegram',
-        telegram_user_id: telegramProfile?.id || null,
-        telegram_user: telegramProfile,
-        products: cart.cartPayload,
-      }
+      body: payload
     })
 
     cart.flashOrder = response?.data || response || null
@@ -623,9 +919,8 @@ const submit = async () => {
     await navigateTo({ path: pathFor('thank-you'), query: code ? { order: code } : {} }, { replace: true })
   } catch (error: any) {
     const apiErrors = error?.data?.options || error?.response?._data?.options || {}
-    Object.entries(apiErrors).forEach(([key, value]) => {
-      errors[key] = Array.isArray(value) ? String(value[0]) : String(value)
-    })
+    clearErrors()
+    applyApiErrors(apiErrors)
     const apiMessage = error?.data?.message || error?.response?._data?.message || ''
     submitError.value = apiMessage || t('order_error')
     if (Object.keys(apiErrors).length) {
@@ -709,23 +1004,23 @@ const submit = async () => {
           <div v-else-if="activeStep === 1" class="checkout-step__body">
             <p v-if="stepHasErrors(1)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
             <label>
-              <span>{{ t('first_name') }}</span>
-              <input v-model="order.user.first_name" class="tg-field" :class="{ 'tg-field--error': errors.first_name }">
+              <span>{{ t('first_name') }}<span v-if="userFieldRequired('first_name')" class="checkout-required">*</span></span>
+              <input v-model="order.user.first_name" class="tg-field" :placeholder="t('placeholder_first_name')" :class="{ 'tg-field--error': errors.first_name }">
               <small v-if="errors.first_name" class="tg-error">{{ errors.first_name }}</small>
             </label>
             <label>
-              <span>{{ t('last_name') }}</span>
-              <input v-model="order.user.last_name" class="tg-field" :class="{ 'tg-field--error': errors.last_name }">
+              <span>{{ t('last_name') }}<span v-if="userFieldRequired('last_name')" class="checkout-required">*</span></span>
+              <input v-model="order.user.last_name" class="tg-field" :placeholder="t('placeholder_last_name')" :class="{ 'tg-field--error': errors.last_name }">
               <small v-if="errors.last_name" class="tg-error">{{ errors.last_name }}</small>
             </label>
             <label>
-              <span>{{ t('phone') }}</span>
-              <input v-model="order.user.phone" class="tg-field" :placeholder="phonePlaceholder" :class="{ 'tg-field--error': errors.phone }" inputmode="tel">
+              <span>{{ t('phone') }}<span v-if="userFieldRequired('phone')" class="checkout-required">*</span></span>
+              <input v-model="order.user.phone" class="tg-field" :placeholder="t('placeholder_phone') || phonePlaceholder" :class="{ 'tg-field--error': errors.phone }" inputmode="tel">
               <small v-if="errors.phone" class="tg-error">{{ errors.phone }}</small>
             </label>
             <label>
-              <span>{{ t('email') }}</span>
-              <input v-model="order.user.email" class="tg-field" type="email" inputmode="email" :class="{ 'tg-field--error': errors.email }">
+              <span>{{ t('email') }}<span v-if="userFieldRequired('email')" class="checkout-required">*</span></span>
+              <input v-model="order.user.email" class="tg-field" type="email" inputmode="email" :placeholder="t('placeholder_email')" :class="{ 'tg-field--error': errors.email }">
               <small v-if="errors.email" class="tg-error">{{ errors.email }}</small>
             </label>
             <button type="button" class="tg-btn" @click="continueStep(1)">{{ t('continue') }}</button>
@@ -784,7 +1079,7 @@ const submit = async () => {
 
             <div v-if="order.delivery.method" class="checkout-step__fields">
               <div v-if="needsPickupLocation" class="saved-addresses">
-                <strong>{{ t('warehouse') }}</strong>
+                <strong>{{ t('warehouse') }}<span v-if="deliveryFieldRequired('warehouse')" class="checkout-required">*</span></strong>
                 <button
                   v-for="location in pickupLocations"
                   :key="location.id"
@@ -819,35 +1114,42 @@ const submit = async () => {
               </div>
 
               <label v-if="usesManualWarehouseFields || needsAddress">
-                <span>{{ t('city') }}</span>
-                <input v-model="order.delivery.settlement" class="tg-field" :class="{ 'tg-field--error': errors.settlement }">
+                <span>{{ t('city') }}<span v-if="deliveryFieldRequired('settlement')" class="checkout-required">*</span></span>
+                <input
+                  v-model="order.delivery.settlement"
+                  class="tg-field"
+                  :placeholder="isMessengerExpress ? pragueCityLabel : t('placeholder_city')"
+                  :readonly="isMessengerExpress"
+                  :class="{ 'tg-field--error': errors.settlement }"
+                >
+                <small v-if="isMessengerExpress" class="checkout-city-hint">{{ t('city_locked_prague') }}</small>
                 <small v-if="errors.settlement" class="tg-error">{{ errors.settlement }}</small>
               </label>
 
               <label v-if="usesManualWarehouseFields">
-                <span>{{ t('warehouse') }}</span>
-                <input v-model="order.delivery.warehouse" class="tg-field" :class="{ 'tg-field--error': errors.warehouse }">
+                <span>{{ t('warehouse') }}<span v-if="deliveryFieldRequired('warehouse')" class="checkout-required">*</span></span>
+                <input v-model="order.delivery.warehouse" class="tg-field" :placeholder="t('placeholder_warehouse')" :class="{ 'tg-field--error': errors.warehouse }">
                 <small v-if="errors.warehouse" class="tg-error">{{ errors.warehouse }}</small>
               </label>
 
               <template v-if="needsAddress">
                 <label>
-                  <span>{{ t('address') }}</span>
-                  <input v-model="order.delivery.street" class="tg-field" :class="{ 'tg-field--error': errors.street }">
+                  <span>{{ t('address') }}<span v-if="deliveryFieldRequired('street')" class="checkout-required">*</span></span>
+                  <input v-model="order.delivery.street" class="tg-field" :placeholder="t('placeholder_address')" :class="{ 'tg-field--error': errors.street }">
                   <small v-if="errors.street" class="tg-error">{{ errors.street }}</small>
                 </label>
                 <label v-if="needsHouse">
-                  <span>{{ t('house') }}</span>
-                  <input v-model="order.delivery.house" class="tg-field" :class="{ 'tg-field--error': errors.house }">
+                  <span>{{ t('house') }}<span v-if="deliveryFieldRequired('house')" class="checkout-required">*</span></span>
+                  <input v-model="order.delivery.house" class="tg-field" :placeholder="t('placeholder_house')" :class="{ 'tg-field--error': errors.house }">
                   <small v-if="errors.house" class="tg-error">{{ errors.house }}</small>
                 </label>
                 <label>
                   <span>{{ t('flat') }}</span>
-                  <input v-model="order.delivery.room" class="tg-field">
+                  <input v-model="order.delivery.room" class="tg-field" :placeholder="t('placeholder_flat')">
                 </label>
-                <label v-if="needsZip">
-                  <span>{{ t('zip') }}</span>
-                  <input v-model="order.delivery.zip" class="tg-field" :class="{ 'tg-field--error': errors.zip }">
+                <label v-if="showsZipField">
+                  <span>{{ t('zip') }}<span v-if="deliveryFieldRequired('zip')" class="checkout-required">*</span></span>
+                  <input v-model="order.delivery.zip" class="tg-field" :placeholder="t('placeholder_zip')" :class="{ 'tg-field--error': errors.zip }">
                   <small v-if="errors.zip" class="tg-error">{{ errors.zip }}</small>
                 </label>
               </template>
@@ -889,6 +1191,7 @@ const submit = async () => {
                 <input v-model="order.payment.method" type="radio" :value="method.key">
                 <span class="radio-card__title">
                   <strong>{{ method.title }}</strong>
+                  <small v-if="paymentMethodMeta(method)">{{ paymentMethodMeta(method) }}</small>
                 </span>
               </label>
             </div>
@@ -915,7 +1218,7 @@ const submit = async () => {
 
             <label>
               <span>{{ t('comment') }}</span>
-              <textarea v-model="order.comment" class="tg-field" rows="3" />
+              <textarea v-model="order.comment" class="tg-field" rows="3" :placeholder="t('placeholder_comment')" />
             </label>
 
             <section class="checkout-total">
@@ -970,6 +1273,12 @@ const submit = async () => {
 .checkout-banner svg {
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+.checkout-required {
+  margin-left: 3px;
+  color: var(--color-danger);
+  font-weight: 800;
 }
 
 .checkout-step__hint {
@@ -1180,6 +1489,14 @@ const submit = async () => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-ink);
+}
+
+.checkout-city-hint {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .checkout-summary,

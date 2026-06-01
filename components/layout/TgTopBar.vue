@@ -20,6 +20,8 @@ const { pathFor, homePath } = useTgRouting()
 const { webApp } = useTelegram()
 const { t } = useTgI18n()
 
+const menuOpen = ref(false)
+
 const goBack = () => {
   if (props.backTo) {
     navigateTo(props.backTo)
@@ -83,7 +85,15 @@ onBeforeUnmount(() => {
       <TgIcon name="arrow-left" :size="22" :stroke="2.4" />
       <span>{{ t('back') }}</span>
     </button>
-    <div v-else class="tg-topbar__spacer" />
+    <button
+      v-else
+      type="button"
+      class="tg-topbar__btn tg-topbar__btn--menu"
+      :aria-label="t('menu')"
+      @click="menuOpen = true"
+    >
+      <TgIcon name="menu" :size="22" :stroke="2.4" />
+    </button>
 
     <NuxtLink v-if="logo" :to="homePath()" class="tg-topbar__logo" aria-label="Vivadzen">
       <img src="/images/logo/vivadzen.png" alt="" width="28" height="28">
@@ -96,6 +106,8 @@ onBeforeUnmount(() => {
     <TgLangSwitcher v-if="showLang" class="tg-topbar__lang" />
     <div v-else class="tg-topbar__spacer" />
   </header>
+
+  <TgMenuSheet v-if="!showBack" v-model="menuOpen" />
 </template>
 
 <style scoped>
@@ -145,6 +157,11 @@ onBeforeUnmount(() => {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.tg-topbar__btn--menu {
+  width: 36px;
+  padding: 0;
 }
 
 .tg-topbar__spacer {
