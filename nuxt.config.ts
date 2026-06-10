@@ -201,6 +201,7 @@ export default defineNuxtConfig({
       siteUrl: HOST_URL,
       apiBase: API_SERVER_URL,
       storefrontCode: process.env.NUXT_PUBLIC_STOREFRONT_CODE || 'telegram',
+      gtmId: (process.env.GTM || '').trim(),
       noimage: '/images/noimage.png',
       packeta: {
         apiKey: process.env.PACKETA_WIDGET_API_KEY || process.env.NUXT_PUBLIC_PACKETA_API_KEY || '',
