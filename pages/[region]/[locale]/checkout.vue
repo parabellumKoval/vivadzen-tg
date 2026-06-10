@@ -57,6 +57,25 @@ const stepOfField = (key: string): number => {
 const errorsForStep = (step: number) => Object.keys(errors).filter((key) => stepOfField(key) === step && errors[key])
 const stepHasErrors = (step: number) => errorsForStep(step).length > 0
 
+const errorFieldLabelMap: Record<string, string> = {
+  first_name: 'first_name',
+  last_name: 'last_name',
+  phone: 'phone',
+  email: 'email',
+  delivery: 'delivery',
+  settlement: 'city',
+  warehouse: 'warehouse',
+  street: 'address',
+  house: 'house',
+  zip: 'zip',
+  payment: 'payment'
+}
+
+const stepErrorFields = (step: number) => errorsForStep(step)
+  .map((key) => t(errorFieldLabelMap[key] || key))
+  .filter(Boolean)
+  .join(', ')
+
 const paymentMethods = computed(() => paymentMethodsFor(order.delivery.method))
 const isDeliveryCostEnabled = computed(() => Boolean(settings.value?.shipping?.add_to_order_enabled))
 const calculableDeliveryKeys = new Set([
@@ -499,6 +518,18 @@ const saveDeliveryStep = async () => {
   if (savedAddress?.id) selectedSavedAddressId.value = savedAddress.id
 }
 
+const focusFirstStepError = async (step: number) => {
+  await nextTick()
+  const keys = errorsForStep(step)
+  if (!keys.length) return
+  const root = document.querySelector(`section.checkout-step:nth-of-type(${step + 1})`)
+  const target = root?.querySelector('.tg-field--error') as HTMLElement | null
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (typeof target.focus === 'function') target.focus({ preventScroll: true })
+  }
+}
+
 const continueStep = async (step: number) => {
   if (isStepLocked(step)) {
     activeStep.value = firstIncompleteStep()
@@ -508,6 +539,7 @@ const continueStep = async (step: number) => {
 
   if (!validateStep(step)) {
     haptic('error')
+    focusFirstStepError(step)
     return
   }
 
@@ -789,11 +821,20 @@ const setInitialStep = () => {
   activeStep.value = firstIncompleteStep()
 }
 
+const clearHiddenDeliveryErrors = () => {
+  if (!deliveryFieldRequired('warehouse')) delete errors.warehouse
+  if (!deliveryFieldRequired('settlement')) delete errors.settlement
+  if (!deliveryFieldRequired('street')) delete errors.street
+  if (!deliveryFieldRequired('house')) delete errors.house
+  if (!deliveryFieldRequired('zip')) delete errors.zip
+}
+
 watch(() => order.delivery.method, () => {
   normalizeMessengerDeliveryFields()
   syncPickupSelection()
   resetInvalidPayment()
   applySavedPayment()
+  clearHiddenDeliveryErrors()
 })
 
 watch(shippingPayload, () => {
@@ -896,6 +937,7 @@ const submit = async () => {
     activeStep.value = firstStepWithErrors()
     submitError.value = t('form_has_errors')
     haptic('error')
+    focusFirstStepError(activeStep.value)
     return
   }
 
@@ -925,6 +967,7 @@ const submit = async () => {
     submitError.value = apiMessage || t('order_error')
     if (Object.keys(apiErrors).length) {
       activeStep.value = firstStepWithErrors()
+      focusFirstStepError(activeStep.value)
     }
     ui.showToast(submitError.value, 'error')
     haptic('error')
@@ -997,12 +1040,15 @@ const submit = async () => {
           </button>
 
           <div v-if="showSummary(1)" class="checkout-summary">
-            <p>{{ t('recipient') }}: {{ recipientSummary }}</p>
+            <p>{{ recipientSummary }}</p>
             <button type="button" class="checkout-link" @click="openStep(1)">{{ t('edit') }}</button>
           </div>
 
           <div v-else-if="activeStep === 1" class="checkout-step__body">
-            <p v-if="stepHasErrors(1)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
+            <p v-if="stepHasErrors(1)" class="checkout-step__hint">
+              {{ t('fix_section_errors') }}
+              <span v-if="stepErrorFields(1)" class="checkout-step__hint-fields">{{ stepErrorFields(1) }}</span>
+            </p>
             <label>
               <span>{{ t('first_name') }}<span v-if="userFieldRequired('first_name')" class="checkout-required">*</span></span>
               <input v-model="order.user.first_name" class="tg-field" :placeholder="t('placeholder_first_name')" :class="{ 'tg-field--error': errors.first_name }">
@@ -1043,12 +1089,15 @@ const submit = async () => {
           </button>
 
           <div v-if="showSummary(2)" class="checkout-summary">
-            <p>{{ t('delivery') }}: {{ deliverySummary }}</p>
+            <p>{{ deliverySummary }}</p>
             <button type="button" class="checkout-link" @click="openStep(2)">{{ t('edit') }}</button>
           </div>
 
           <div v-else-if="activeStep === 2" class="checkout-step__body">
-            <p v-if="stepHasErrors(2)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
+            <p v-if="stepHasErrors(2)" class="checkout-step__hint">
+              {{ t('fix_section_errors') }}
+              <span v-if="stepErrorFields(2)" class="checkout-step__hint-fields">{{ stepErrorFields(2) }}</span>
+            </p>
 
             <label v-if="userStore.addresses.length" class="address-selector">
               <span>{{ t('use_saved_address') }}</span>
@@ -1072,7 +1121,10 @@ const submit = async () => {
                   <strong>{{ method.title }}</strong>
                   <small>{{ method.label || t('delivery') }}</small>
                 </span>
-                <em>{{ checkoutDeliveryMeta(method) }}</em>
+                <span class="radio-card__meta">
+                  <strong class="radio-card__meta-price">{{ deliveryPriceLabel(method.price) }}</strong>
+                  <small v-if="method.eta" class="radio-card__meta-eta">{{ method.eta }}</small>
+                </span>
               </label>
             </div>
             <small v-if="errors.delivery" class="tg-error">{{ errors.delivery }}</small>
@@ -1175,12 +1227,15 @@ const submit = async () => {
           </button>
 
           <div v-if="showSummary(3)" class="checkout-summary">
-            <p>{{ t('payment') }}: {{ paymentSummary }}</p>
+            <p>{{ paymentSummary }}</p>
             <button type="button" class="checkout-link" @click="openStep(3)">{{ t('edit') }}</button>
           </div>
 
           <div v-else-if="activeStep === 3" class="checkout-step__body">
-            <p v-if="stepHasErrors(3)" class="checkout-step__hint">{{ t('fix_section_errors') }}</p>
+            <p v-if="stepHasErrors(3)" class="checkout-step__hint">
+              {{ t('fix_section_errors') }}
+              <span v-if="stepErrorFields(3)" class="checkout-step__hint-fields">{{ stepErrorFields(3) }}</span>
+            </p>
             <div class="radio-list">
               <label
                 v-for="method in paymentMethods"
@@ -1282,6 +1337,8 @@ const submit = async () => {
 }
 
 .checkout-step__hint {
+  display: grid;
+  gap: 4px;
   margin: 0;
   border: 1.5px solid var(--color-danger);
   border-radius: var(--radius-sm);
@@ -1290,6 +1347,14 @@ const submit = async () => {
   color: var(--color-danger);
   font-size: 12px;
   font-weight: 600;
+}
+
+.checkout-step__hint-fields {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .address-selector {
@@ -1503,6 +1568,9 @@ const submit = async () => {
 .checkout-confirm {
   display: grid;
   gap: 8px;
+}
+
+.checkout-confirm {
   border: 2px solid var(--color-ink);
   border-radius: var(--radius-md);
   background: var(--color-bg-input);
@@ -1611,6 +1679,28 @@ const submit = async () => {
   font-size: 13px;
   font-style: normal;
   letter-spacing: 0.02em;
+}
+
+.radio-card__meta {
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  text-align: right;
+}
+
+.radio-card__meta-price {
+  font-family: var(--font-display);
+  color: var(--color-accent-dark);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.radio-card__meta-eta {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .saved-addresses > strong {

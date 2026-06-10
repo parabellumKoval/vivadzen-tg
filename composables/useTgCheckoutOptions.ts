@@ -254,6 +254,14 @@ export const useTgCheckoutOptions = () => {
       }
     }
 
+    const pickupIndex = list.findIndex((method) => method.key === 'default_pickup')
+    if (pickupIndex !== -1 && pickupIndex !== list.length - 1) {
+      const [pickup] = list.splice(pickupIndex, 1)
+      if (pickup) {
+        list.push(pickup)
+      }
+    }
+
     return list
   })
 
