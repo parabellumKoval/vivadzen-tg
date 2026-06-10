@@ -208,6 +208,7 @@ export default {
   payment_default_cash: 'Наличные',
   payment_card_online: 'Оплата картой',
   payment_bank_transfer: 'Банковский перевод',
+  bank_transfer_address_hint: 'Для банковского перевода укажите адрес плательщика.',
   payment_messenger_cod: 'Наложенный платёж Messenger',
   in_stock: 'В наличии',
   out_of_stock: 'Нет в наличии',

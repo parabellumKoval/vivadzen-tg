@@ -208,6 +208,7 @@ export default {
   payment_default_cash: 'Hotově',
   payment_card_online: 'Platba kartou',
   payment_bank_transfer: 'Bankovní převod',
+  bank_transfer_address_hint: 'Pro bankovní převod vyplňte fakturační adresu plátce.',
   payment_messenger_cod: 'Dobírka Messenger',
   in_stock: 'Skladem',
   out_of_stock: 'Není skladem',

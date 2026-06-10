@@ -15,7 +15,12 @@ const defaultOrderState = () => ({
     codPriceCurrency: null as string | null
   },
   payment: {
-    method: null as string | null
+    method: null as string | null,
+    settlement: null as string | null,
+    street: null as string | null,
+    house: null as string | null,
+    room: null as string | null,
+    zip: null as string | null
   },
   user: {
     first_name: null as string | null,
@@ -257,7 +262,14 @@ export const useTgCartStore = defineStore('tgCartStore', {
         codPrice: typeof delivery.codPrice === 'number' ? delivery.codPrice : null,
         codPriceCurrency: delivery.codPriceCurrency ?? delivery.cod_price_currency ?? null
       }
-      next.payment = { method: payment.method ?? null }
+      next.payment = {
+        method: payment.method ?? null,
+        settlement: payment.settlement ?? null,
+        street: payment.street ?? null,
+        house: payment.house ?? null,
+        room: payment.room ?? null,
+        zip: payment.zip ?? null
+      }
       next.user = {
         first_name: user.first_name ?? null,
         last_name: user.last_name ?? null,

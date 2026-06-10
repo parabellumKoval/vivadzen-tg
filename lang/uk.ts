@@ -208,6 +208,7 @@ export default {
   payment_default_cash: 'Готівка',
   payment_card_online: 'Оплата карткою',
   payment_bank_transfer: 'Банківський переказ',
+  bank_transfer_address_hint: 'Для банківського переказу вкажіть адресу платника.',
   payment_messenger_cod: 'Післяплата Messenger',
   in_stock: 'В наявності',
   out_of_stock: 'Немає в наявності',

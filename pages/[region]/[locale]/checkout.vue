@@ -43,7 +43,14 @@ const checkoutRulesLoading = ref(false)
 
 const userFields = ['first_name', 'last_name', 'phone', 'email']
 const deliveryFields = ['delivery', 'settlement', 'warehouse', 'street', 'house', 'zip']
-const paymentFields = ['payment']
+const paymentFields = ['payment', 'payment_settlement', 'payment_street', 'payment_house', 'payment_room', 'payment_zip']
+const paymentAddressFields = ['settlement', 'street', 'house', 'room', 'zip'] as const
+const paymentAddressExcludedDeliveryMethods = new Set([
+  'packeta_address',
+  'default_address',
+  'messenger_address',
+  'messenger_express'
+])
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^[+\d][\d\s\-()]{6,}$/
 
@@ -68,7 +75,28 @@ const errorFieldLabelMap: Record<string, string> = {
   street: 'address',
   house: 'house',
   zip: 'zip',
-  payment: 'payment'
+  payment: 'payment',
+  payment_settlement: 'city',
+  payment_street: 'address',
+  payment_house: 'house',
+  payment_room: 'flat',
+  payment_zip: 'zip'
+}
+
+const ALLOWED_INLINE_TAGS = ['b', 'strong', 'i', 'em', 'br']
+const renderSafeHtml = (input: unknown): string => {
+  const text = String(input ?? '')
+  if (!text) return ''
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  return ALLOWED_INLINE_TAGS.reduce((value, tag) => {
+    return value
+      .replace(new RegExp(`&lt;${tag}&gt;`, 'gi'), `<${tag}>`)
+      .replace(new RegExp(`&lt;/${tag}&gt;`, 'gi'), `</${tag}>`)
+      .replace(new RegExp(`&lt;${tag} ?/&gt;`, 'gi'), `<${tag}/>`)
+  }, escaped)
 }
 
 const stepErrorFields = (step: number) => errorsForStep(step)
@@ -106,10 +134,20 @@ const needsAddress = computed(() => {
 })
 const isMessengerMethod = computed(() => ['messenger_address', 'messenger_express'].includes(String(order.delivery.method || '')))
 const isMessengerExpress = computed(() => order.delivery.method === 'messenger_express')
-const needsHouse = computed(() => ['novaposhta_address', 'default_address'].includes(String(order.delivery.method || '')))
-const showsZipField = computed(() => ['novaposhta_address', 'packeta_address'].includes(String(order.delivery.method || '')))
+const needsHouse = computed(() => ['novaposhta_address', 'default_address', 'messenger_express'].includes(String(order.delivery.method || '')))
+const showsZipField = computed(() => ['novaposhta_address', 'packeta_address', 'messenger_express'].includes(String(order.delivery.method || '')))
 const isPacketaWarehouse = computed(() => order.delivery.method === 'packeta_warehouse')
 const usesManualWarehouseFields = computed(() => needsWarehouse.value && !isPacketaWarehouse.value)
+const needsPaymentAddress = computed(() => {
+  if (order.payment.method !== 'bank_transfer') return false
+  const method = String(order.delivery.method || '').trim()
+  if (!method) return false
+  return !paymentAddressExcludedDeliveryMethods.has(method)
+})
+const paymentFieldRequired = (field: typeof paymentAddressFields[number]) => {
+  const fallback = needsPaymentAddress.value && field !== 'room'
+  return isFieldRequired(`payment.${field}`, fallback)
+}
 const packetaPickerLoading = ref(false)
 const messengerCodPreviewQuote = ref<Record<string, any> | null>(null)
 const messengerCodPreviewKey = ref<string | null>(null)
@@ -241,10 +279,15 @@ const isUserStepComplete = computed(() => {
     && (!hasValue(email) || emailPattern.test(email))
   )
 })
-const isPaymentStepComplete = computed(() => Boolean(
-  order.payment.method
-  && (!paymentMethods.value.length || paymentMethods.value.some((method) => method.key === order.payment.method))
-))
+const isPaymentStepComplete = computed(() => {
+  const methodOk = Boolean(
+    order.payment.method
+    && (!paymentMethods.value.length || paymentMethods.value.some((method) => method.key === order.payment.method))
+  )
+  if (!methodOk) return false
+  if (!needsPaymentAddress.value) return true
+  return paymentAddressFields.every((field) => !paymentFieldRequired(field) || hasValue(order.payment[field]))
+})
 const isDeliveryStepComplete = computed(() => {
   if (!order.delivery.method) return false
 
@@ -416,7 +459,16 @@ const addUserErrors = () => {
 }
 
 const addPaymentErrors = () => {
-  if (!order.payment.method) errors.payment = t('select_payment')
+  if (!order.payment.method) {
+    errors.payment = t('select_payment')
+    return
+  }
+  if (!needsPaymentAddress.value) return
+  paymentAddressFields.forEach((field) => {
+    if (paymentFieldRequired(field) && !hasValue(order.payment[field])) {
+      errors[`payment_${field}`] = t('required')
+    }
+  })
 }
 
 const addDeliveryErrors = () => {
@@ -589,9 +641,17 @@ const applyApiErrors = (source: Record<string, any> | null | undefined, prefix =
     const path = prefix ? `${prefix}.${key}` : key
 
     if (Array.isArray(value)) {
-      const normalizedKey = path.startsWith('payment.')
-        ? 'payment'
-        : (path === 'delivery.method' ? 'delivery' : (path.split('.').pop() || path))
+      let normalizedKey: string
+      if (path === 'payment.method' || path === 'payment') {
+        normalizedKey = 'payment'
+      } else if (path.startsWith('payment.')) {
+        const subfield = path.slice('payment.'.length).split('.')[0]
+        normalizedKey = paymentAddressFields.includes(subfield as any) ? `payment_${subfield}` : 'payment'
+      } else if (path === 'delivery.method') {
+        normalizedKey = 'delivery'
+      } else {
+        normalizedKey = path.split('.').pop() || path
+      }
       errors[normalizedKey] = String(value[0] || '')
       return
     }
@@ -603,7 +663,8 @@ const applyApiErrors = (source: Record<string, any> | null | undefined, prefix =
 }
 
 const buildOrderPayload = (telegramProfile: Record<string, any> | null) => {
-  const messengerStreet = isMessengerMethod.value
+  const collapseHouseIntoStreet = isMessengerMethod.value && !isMessengerExpress.value
+  const street = collapseHouseIntoStreet
     ? appendHouseToStreet(order.delivery.street, order.delivery.house)
     : String(order.delivery.street || '').trim()
 
@@ -624,16 +685,21 @@ const buildOrderPayload = (telegramProfile: Record<string, any> | null) => {
   delivery: {
     method: order.delivery.method || null,
     settlement: isMessengerExpress.value ? pragueCityLabel.value : (order.delivery.settlement || null),
-    street: messengerStreet || null,
-    house: isMessengerMethod.value ? null : (order.delivery.house || null),
+    street: street || null,
+    house: collapseHouseIntoStreet ? null : (order.delivery.house || null),
     room: order.delivery.room || null,
-    zip: isMessengerMethod.value ? null : (order.delivery.zip || null),
+    zip: collapseHouseIntoStreet ? null : (order.delivery.zip || null),
     warehouse: order.delivery.warehouse || null,
     price: order.delivery.price ?? null,
     priceCurrency: order.delivery.priceCurrency || null
   },
   payment: {
-    method: order.payment.method || null
+    method: order.payment.method || null,
+    settlement: needsPaymentAddress.value ? (order.payment.settlement || null) : null,
+    street: needsPaymentAddress.value ? (order.payment.street || null) : null,
+    house: needsPaymentAddress.value ? (order.payment.house || null) : null,
+    room: needsPaymentAddress.value ? (order.payment.room || null) : null,
+    zip: needsPaymentAddress.value ? (order.payment.zip || null) : null
   },
   comment: order.comment || null,
   products: { ...cart.cartPayload }
@@ -731,6 +797,12 @@ const normalizeMessengerDeliveryFields = () => {
     return
   }
 
+  if (isMessengerExpress.value) {
+    order.delivery.settlement = pragueCityLabel.value
+    delete errors.settlement
+    return
+  }
+
   if (hasValue(order.delivery.house)) {
     order.delivery.street = appendHouseToStreet(order.delivery.street, order.delivery.house)
   }
@@ -739,11 +811,6 @@ const normalizeMessengerDeliveryFields = () => {
   order.delivery.zip = ''
   delete errors.house
   delete errors.zip
-
-  if (isMessengerExpress.value) {
-    order.delivery.settlement = pragueCityLabel.value
-    delete errors.settlement
-  }
 }
 
 const onSavedAddressChange = () => {
@@ -886,6 +953,17 @@ watch(paymentMethods, () => {
   applySavedPayment()
 })
 
+const clearPaymentAddressFields = () => {
+  paymentAddressFields.forEach((field) => {
+    order.payment[field] = null
+    delete errors[`payment_${field}`]
+  })
+}
+
+watch(needsPaymentAddress, (next) => {
+  if (!next) clearPaymentAddressFields()
+})
+
 watch([isUserStepComplete, isPaymentStepComplete, isDeliveryStepComplete], () => {
   if (isStepLocked(activeStep.value)) {
     activeStep.value = firstIncompleteStep()
@@ -991,7 +1069,7 @@ const submit = async () => {
       <template v-else>
         <div v-if="submitError" class="checkout-banner" role="alert">
           <TgIcon name="info" :size="16" :stroke="2.4" />
-          <span>{{ submitError }}</span>
+          <span v-html="renderSafeHtml(submitError)"></span>
         </div>
 
         <ul class="checkout-trust">
@@ -1052,22 +1130,22 @@ const submit = async () => {
             <label>
               <span>{{ t('first_name') }}<span v-if="userFieldRequired('first_name')" class="checkout-required">*</span></span>
               <input v-model="order.user.first_name" class="tg-field" :placeholder="t('placeholder_first_name')" :class="{ 'tg-field--error': errors.first_name }">
-              <small v-if="errors.first_name" class="tg-error">{{ errors.first_name }}</small>
+              <small v-if="errors.first_name" class="tg-error" v-html="renderSafeHtml(errors.first_name)"></small>
             </label>
             <label>
               <span>{{ t('last_name') }}<span v-if="userFieldRequired('last_name')" class="checkout-required">*</span></span>
               <input v-model="order.user.last_name" class="tg-field" :placeholder="t('placeholder_last_name')" :class="{ 'tg-field--error': errors.last_name }">
-              <small v-if="errors.last_name" class="tg-error">{{ errors.last_name }}</small>
+              <small v-if="errors.last_name" class="tg-error" v-html="renderSafeHtml(errors.last_name)"></small>
             </label>
             <label>
               <span>{{ t('phone') }}<span v-if="userFieldRequired('phone')" class="checkout-required">*</span></span>
               <input v-model="order.user.phone" class="tg-field" :placeholder="t('placeholder_phone') || phonePlaceholder" :class="{ 'tg-field--error': errors.phone }" inputmode="tel">
-              <small v-if="errors.phone" class="tg-error">{{ errors.phone }}</small>
+              <small v-if="errors.phone" class="tg-error" v-html="renderSafeHtml(errors.phone)"></small>
             </label>
             <label>
               <span>{{ t('email') }}<span v-if="userFieldRequired('email')" class="checkout-required">*</span></span>
               <input v-model="order.user.email" class="tg-field" type="email" inputmode="email" :placeholder="t('placeholder_email')" :class="{ 'tg-field--error': errors.email }">
-              <small v-if="errors.email" class="tg-error">{{ errors.email }}</small>
+              <small v-if="errors.email" class="tg-error" v-html="renderSafeHtml(errors.email)"></small>
             </label>
             <button type="button" class="tg-btn" @click="continueStep(1)">{{ t('continue') }}</button>
           </div>
@@ -1127,7 +1205,7 @@ const submit = async () => {
                 </span>
               </label>
             </div>
-            <small v-if="errors.delivery" class="tg-error">{{ errors.delivery }}</small>
+            <small v-if="errors.delivery" class="tg-error" v-html="renderSafeHtml(errors.delivery)"></small>
 
             <div v-if="order.delivery.method" class="checkout-step__fields">
               <div v-if="needsPickupLocation" class="saved-addresses">
@@ -1143,7 +1221,7 @@ const submit = async () => {
                   <span>{{ location.label }}</span>
                   <small v-if="location.schedule">{{ location.schedule }}</small>
                 </button>
-                <small v-if="errors.warehouse" class="tg-error">{{ errors.warehouse }}</small>
+                <small v-if="errors.warehouse" class="tg-error" v-html="renderSafeHtml(errors.warehouse)"></small>
               </div>
 
               <div v-if="isPacketaWarehouse" class="packeta-picker">
@@ -1162,7 +1240,7 @@ const submit = async () => {
                     {{ [order.delivery.street, order.delivery.settlement, order.delivery.zip].filter(Boolean).join(', ') }}
                   </small>
                 </div>
-                <small v-if="errors.warehouse" class="tg-error">{{ errors.warehouse }}</small>
+                <small v-if="errors.warehouse" class="tg-error" v-html="renderSafeHtml(errors.warehouse)"></small>
               </div>
 
               <label v-if="usesManualWarehouseFields || needsAddress">
@@ -1175,25 +1253,25 @@ const submit = async () => {
                   :class="{ 'tg-field--error': errors.settlement }"
                 >
                 <small v-if="isMessengerExpress" class="checkout-city-hint">{{ t('city_locked_prague') }}</small>
-                <small v-if="errors.settlement" class="tg-error">{{ errors.settlement }}</small>
+                <small v-if="errors.settlement" class="tg-error" v-html="renderSafeHtml(errors.settlement)"></small>
               </label>
 
               <label v-if="usesManualWarehouseFields">
                 <span>{{ t('warehouse') }}<span v-if="deliveryFieldRequired('warehouse')" class="checkout-required">*</span></span>
                 <input v-model="order.delivery.warehouse" class="tg-field" :placeholder="t('placeholder_warehouse')" :class="{ 'tg-field--error': errors.warehouse }">
-                <small v-if="errors.warehouse" class="tg-error">{{ errors.warehouse }}</small>
+                <small v-if="errors.warehouse" class="tg-error" v-html="renderSafeHtml(errors.warehouse)"></small>
               </label>
 
               <template v-if="needsAddress">
                 <label>
                   <span>{{ t('address') }}<span v-if="deliveryFieldRequired('street')" class="checkout-required">*</span></span>
                   <input v-model="order.delivery.street" class="tg-field" :placeholder="t('placeholder_address')" :class="{ 'tg-field--error': errors.street }">
-                  <small v-if="errors.street" class="tg-error">{{ errors.street }}</small>
+                  <small v-if="errors.street" class="tg-error" v-html="renderSafeHtml(errors.street)"></small>
                 </label>
                 <label v-if="needsHouse">
                   <span>{{ t('house') }}<span v-if="deliveryFieldRequired('house')" class="checkout-required">*</span></span>
                   <input v-model="order.delivery.house" class="tg-field" :placeholder="t('placeholder_house')" :class="{ 'tg-field--error': errors.house }">
-                  <small v-if="errors.house" class="tg-error">{{ errors.house }}</small>
+                  <small v-if="errors.house" class="tg-error" v-html="renderSafeHtml(errors.house)"></small>
                 </label>
                 <label>
                   <span>{{ t('flat') }}</span>
@@ -1202,7 +1280,7 @@ const submit = async () => {
                 <label v-if="showsZipField">
                   <span>{{ t('zip') }}<span v-if="deliveryFieldRequired('zip')" class="checkout-required">*</span></span>
                   <input v-model="order.delivery.zip" class="tg-field" :placeholder="t('placeholder_zip')" :class="{ 'tg-field--error': errors.zip }">
-                  <small v-if="errors.zip" class="tg-error">{{ errors.zip }}</small>
+                  <small v-if="errors.zip" class="tg-error" v-html="renderSafeHtml(errors.zip)"></small>
                 </label>
               </template>
             </div>
@@ -1250,7 +1328,37 @@ const submit = async () => {
                 </span>
               </label>
             </div>
-            <small v-if="errors.payment" class="tg-error">{{ errors.payment }}</small>
+            <small v-if="errors.payment" class="tg-error" v-html="renderSafeHtml(errors.payment)"></small>
+
+            <div v-if="needsPaymentAddress" class="checkout-step__fields">
+              <p class="checkout-step__hint checkout-step__hint--info">{{ t('bank_transfer_address_hint') }}</p>
+              <label>
+                <span>{{ t('city') }}<span v-if="paymentFieldRequired('settlement')" class="checkout-required">*</span></span>
+                <input v-model="order.payment.settlement" class="tg-field" :placeholder="t('placeholder_city')" :class="{ 'tg-field--error': errors.payment_settlement }">
+                <small v-if="errors.payment_settlement" class="tg-error" v-html="renderSafeHtml(errors.payment_settlement)"></small>
+              </label>
+              <label>
+                <span>{{ t('address') }}<span v-if="paymentFieldRequired('street')" class="checkout-required">*</span></span>
+                <input v-model="order.payment.street" class="tg-field" :placeholder="t('placeholder_address')" :class="{ 'tg-field--error': errors.payment_street }">
+                <small v-if="errors.payment_street" class="tg-error" v-html="renderSafeHtml(errors.payment_street)"></small>
+              </label>
+              <label>
+                <span>{{ t('house') }}<span v-if="paymentFieldRequired('house')" class="checkout-required">*</span></span>
+                <input v-model="order.payment.house" class="tg-field" :placeholder="t('placeholder_house')" :class="{ 'tg-field--error': errors.payment_house }">
+                <small v-if="errors.payment_house" class="tg-error" v-html="renderSafeHtml(errors.payment_house)"></small>
+              </label>
+              <label>
+                <span>{{ t('flat') }}<span v-if="paymentFieldRequired('room')" class="checkout-required">*</span></span>
+                <input v-model="order.payment.room" class="tg-field" :placeholder="t('placeholder_flat')" :class="{ 'tg-field--error': errors.payment_room }">
+                <small v-if="errors.payment_room" class="tg-error" v-html="renderSafeHtml(errors.payment_room)"></small>
+              </label>
+              <label>
+                <span>{{ t('zip') }}<span v-if="paymentFieldRequired('zip')" class="checkout-required">*</span></span>
+                <input v-model="order.payment.zip" class="tg-field" :placeholder="t('placeholder_zip')" :class="{ 'tg-field--error': errors.payment_zip }">
+                <small v-if="errors.payment_zip" class="tg-error" v-html="renderSafeHtml(errors.payment_zip)"></small>
+              </label>
+            </div>
+
             <button type="button" class="tg-btn" @click="continueStep(3)">{{ t('continue') }}</button>
           </div>
         </section>
@@ -1355,6 +1463,12 @@ const submit = async () => {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.checkout-step__hint--info {
+  border-color: var(--color-ink);
+  background: var(--color-bg-alt);
+  color: var(--color-ink);
 }
 
 .address-selector {

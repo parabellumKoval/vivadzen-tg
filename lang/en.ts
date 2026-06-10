@@ -208,6 +208,7 @@ export default {
   payment_default_cash: 'Cash',
   payment_card_online: 'Card online',
   payment_bank_transfer: 'Bank transfer',
+  bank_transfer_address_hint: 'For bank transfer please fill in the payer billing address.',
   payment_messenger_cod: 'Messenger cash on delivery',
   in_stock: 'In stock',
   out_of_stock: 'Out of stock',
